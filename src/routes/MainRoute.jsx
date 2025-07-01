@@ -12,6 +12,10 @@ import BrandingGift from "../pages/user/BrandingGift";
 import Orders from "../pages/user/Orders"; 
 import Premium from "../pages/user/Premium"; 
 import ProductDetail from "../pages/user/ProductDetail"; 
+import PaymentPage from "../pages/user/PaymentPage";
+import ChooseProductPage from "../pages/user/Design/ChooseProductPage";
+import ProductDesignDetail from "../pages/user/Design/ProductDesignDetail";
+import HatDesignPage from "../pages/user/Design/HatDesignPage";
 const MainRoute = () => {
   return (
     <Router>
@@ -28,6 +32,10 @@ const MainRoute = () => {
         <Route path="/orders" element={<Orders />} />
         <Route path="/premium" element={<Premium />} />
         <Route path="/product-detail/:id" element={<ProductDetail />} />
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/choose-product" element={<ChooseProductPage />} />
+        <Route path="/product-design/:id" element={<ProductDesignDetail />} />
+        <Route path="/hat-design" element={<HatDesignPage />} />
         {/* Routes accessible by admin */}
         <Route path="/admin" element={<AdminPage />} />
 
