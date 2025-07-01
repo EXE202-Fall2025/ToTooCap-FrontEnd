@@ -16,6 +16,9 @@ const HomePage = () => {
   const handleProductDetail = (id) => {
     navigate(`/product-detail/${id}`);
   };
+  const handleCreateProduct = () => {
+    navigate("/choose-product");
+  };
   const trendingProducts = [
     {
       name: "Mũ Teddy - Phong cách trẻ trung",
@@ -65,6 +68,7 @@ const HomePage = () => {
               bản dễ dàng như thế nào với ToTooCap
             </Typography>
             <Button
+              onClick={handleCreateProduct}
               variant="contained"
               sx={{ bgcolor: "#a4f35f", color: "#000", fontWeight: "bold" }}
             >

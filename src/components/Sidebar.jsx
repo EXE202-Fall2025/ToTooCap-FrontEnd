@@ -26,37 +26,26 @@ import {
 } from "@mui/icons-material";
 
 import NotificationModal from "../pages/user/NotificationModal";
+import CatalogModal from "../pages/user/CatalogModal"; // ✅ Thêm dòng này
 
 const drawerWidth = 240;
 
 const Sidebar = () => {
   const [openNotification, setOpenNotification] = useState(false);
-  const [openCatalog, setOpenCatalog] = useState(false);
+  const [openCatalogModal, setOpenCatalogModal] = useState(false); // ✅ modal catalog
   const [openHelp, setOpenHelp] = useState(false);
 
   const navigate = useNavigate();
 
-  const handleDashboardClick = () => {
-    navigate("/");
-  };
-  const handleAccountClick = () => {
-    navigate("/login");
-  };
-  const handleMyProductsClick = () => {
-    navigate("/my-products");
-  };
-  const handleBrandingClick = () => {
-    navigate("/branding-gift");
-  };
-  const handleOrdersClick = () => {
-    navigate("/orders");
-  };
-  const handlePremiumClick = () => {
-    navigate("/premium");
-  };
-  const handleNotificationsClick = () => {
-    setOpenNotification(true);
-  };
+  const handleDashboardClick = () => navigate("/");
+  const handleAccountClick = () => navigate("/login");
+  const handleMyProductsClick = () => navigate("/my-products");
+  const handleBrandingClick = () => navigate("/branding-gift");
+  const handleOrdersClick = () => navigate("/orders");
+  const handlePremiumClick = () => navigate("/premium");
+
+  const handleNotificationsClick = () => setOpenNotification(true);
+  const handleCatalogClick = () => setOpenCatalogModal(true); // ✅ mở modal
 
   return (
     <>
@@ -85,89 +74,69 @@ const Sidebar = () => {
 
         <List>
           <ListItem button onClick={handleDashboardClick}>
-            <ListItemIcon>
-              <Home />
-            </ListItemIcon>
+            <ListItemIcon><Home /></ListItemIcon>
             <ListItemText primary="Dashboard" />
           </ListItem>
 
           <ListItem button onClick={handleNotificationsClick}>
-            <ListItemIcon>
-              <Notifications />
-            </ListItemIcon>
+            <ListItemIcon><Notifications /></ListItemIcon>
             <ListItemText primary="Notifications" />
           </ListItem>
 
-          <ListItem button onClick={() => setOpenCatalog(!openCatalog)}>
-            <ListItemIcon>
-              <Inventory />
-            </ListItemIcon>
+          <ListItem button onClick={handleCatalogClick}> 
+            <ListItemIcon><Inventory /></ListItemIcon>
             <ListItemText primary="Catalog" />
-            {openCatalog ? <ExpandLess /> : <ExpandMore />}
           </ListItem>
-          <Collapse in={openCatalog} timeout="auto" unmountOnExit>
-            <List component="div" disablePadding>
-              {/* Add catalog sub-items here if needed */}
-            </List>
-          </Collapse>
 
           <ListItem button onClick={handleMyProductsClick}>
-            <ListItemIcon>
-              <LocalOffer />
-            </ListItemIcon>
+            <ListItemIcon><LocalOffer /></ListItemIcon>
             <ListItemText primary="My products" />
           </ListItem>
 
           <ListItem button onClick={handleOrdersClick}>
-            <ListItemIcon>
-              <LocalShipping />
-            </ListItemIcon>
+            <ListItemIcon><LocalShipping /></ListItemIcon>
             <ListItemText primary="Orders" />
           </ListItem>
 
           <ListItem button onClick={handleBrandingClick}>
-            <ListItemIcon>
-              <Favorite />
-            </ListItemIcon>
+            <ListItemIcon><Favorite /></ListItemIcon>
             <ListItemText primary="Branding" />
           </ListItem>
 
           <ListItem button onClick={handlePremiumClick}>
-            <ListItemIcon>
-              <EmojiEvents />
-            </ListItemIcon>
+            <ListItemIcon><EmojiEvents /></ListItemIcon>
             <ListItemText primary="Printify Premium" />
           </ListItem>
 
           <ListItem button onClick={() => setOpenHelp(!openHelp)}>
-            <ListItemIcon>
-              <HelpOutline />
-            </ListItemIcon>
+            <ListItemIcon><HelpOutline /></ListItemIcon>
             <ListItemText primary="Need help?" />
             {openHelp ? <ExpandLess /> : <ExpandMore />}
           </ListItem>
 
           <Collapse in={openHelp} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
-              {/* Nested help items */}
+              {/* Nested help items here */}
             </List>
           </Collapse>
         </List>
 
         <Box sx={{ mt: "auto", p: 2 }}>
           <ListItem button onClick={handleAccountClick}>
-            <ListItemIcon>
-              <AccountCircle />
-            </ListItemIcon>
+            <ListItemIcon><AccountCircle /></ListItemIcon>
             <ListItemText primary="Account" secondary="Login/Register" />
           </ListItem>
         </Box>
       </Drawer>
 
-      {/* ✅ Modal placed here */}
+      {/* ✅ Modals */}
       <NotificationModal
         open={openNotification}
         onClose={() => setOpenNotification(false)}
+      />
+      <CatalogModal
+        open={openCatalogModal}
+        onClose={() => setOpenCatalogModal(false)}
       />
     </>
   );
