@@ -1,16 +1,19 @@
-import React, { useEffect } from "react";
-import { Box, IconButton, Tooltip } from "@mui/material";
+import React, { useEffect, useRef, useState } from "react";
+import { Box, IconButton, Tooltip, Input } from "@mui/material";
 import {
   Undo,
   Redo,
   Image,
   TextFields,
   Save,
+  ColorLens,
 } from "@mui/icons-material";
 import { FabricJSCanvas, useFabricJSEditor } from "fabricjs-react";
 
 export default function HatDesignPage() {
   const { editor, onReady } = useFabricJSEditor();
+  const fileInputRef = useRef(null);
+  const [boundaryRef, setBoundaryRef] = useState(null);
 
   const CANVAS_WIDTH = 500;
   const CANVAS_HEIGHT = 500;
@@ -20,35 +23,61 @@ export default function HatDesignPage() {
   };
 
   const addImage = () => {
-  const imgUrl = "https://cdn-icons-png.flaticon.com/512/25/25231.png";
-  const canvas = editor.canvas;
+    const imgUrl = "https://cdn-icons-png.flaticon.com/512/25/25231.png";
+    const canvas = editor.canvas;
+    const boundary = boundaryRef;
 
-  const boundary = canvas.getObjects().find((obj) => obj?.type === "rect");
+    if (!boundary) {
+      alert("Không tìm thấy vùng thiết kế!");
+      return;
+    }
 
-  if (!boundary) {
-    alert("Không tìm thấy vùng thiết kế!");
-    return;
-  }
+    window.fabric.Image.fromURL(imgUrl, (img) => {
+      const maxW = boundary.width * boundary.scaleX;
+      const maxH = boundary.height * boundary.scaleY;
+      const scale = Math.min(maxW / img.width, maxH / img.height);
 
-  window.fabric.Image.fromURL(imgUrl, (img) => {
-    // Tính toán scale vừa với boundary
-    const maxW = boundary.width * boundary.scaleX;
-    const maxH = boundary.height * boundary.scaleY;
+      img.set({
+        left: boundary.left + (maxW - img.width * scale) / 2,
+        top: boundary.top + (maxH - img.height * scale) / 2,
+        scaleX: scale,
+        scaleY: scale,
+      });
 
-    const scale = Math.min(maxW / img.width, maxH / img.height);
-
-    img.set({
-      left: boundary.left + (maxW - img.width * scale) / 2,
-      top: boundary.top + (maxH - img.height * scale) / 2,
-      scaleX: scale,
-      scaleY: scale,
+      canvas.add(img);
+      canvas.setActiveObject(img);
     });
+  };
 
-    canvas.add(img);
-    canvas.setActiveObject(img);
-  });
-};
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    const canvas = editor.canvas;
+    const boundary = boundaryRef;
+    if (!boundary) return;
 
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onload = function (f) {
+      window.fabric.Image.fromURL(f.target.result, (img) => {
+        const maxW = boundary.width * boundary.scaleX;
+        const maxH = boundary.height * boundary.scaleY;
+        const scale = Math.min(maxW / img.width, maxH / img.height);
+
+        img.set({
+          left: boundary.left + (maxW - img.width * scale) / 2,
+          top: boundary.top + (maxH - img.height * scale) / 2,
+          scaleX: scale,
+          scaleY: scale,
+        });
+
+        canvas.add(img);
+        canvas.setActiveObject(img);
+      });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleUndo = () => {
     alert("Undo chưa được triển khai");
@@ -66,10 +95,19 @@ export default function HatDesignPage() {
     link.click();
   };
 
+  const handleColorChange = (e) => {
+    const canvas = editor.canvas;
+    const newColor = e.target.value;
+    const boundary = boundaryRef;
+    if (boundary) {
+      boundary.set({ fill: newColor });
+      canvas.renderAll();
+    }
+  };
+
   const addHatBackground = () => {
     const canvas = editor.canvas;
 
-    // Thêm hình nón
     window.fabric.Image.fromURL(
       "https://gecko.vn/media/assets/product-design/thumb/non.png",
       (hatImg) => {
@@ -92,19 +130,19 @@ export default function HatDesignPage() {
       }
     );
 
-    // Vẽ vùng thiết kế
     const boundary = new window.fabric.Rect({
       left: 150,
       top: 100,
       width: 200,
       height: 120,
-      fill: "rgba(0,0,0,0.02)",
+      fill: "#fefefe",
       stroke: "#aaa",
       strokeDashArray: [5, 5],
       selectable: false,
       evented: false,
     });
     canvas.add(boundary);
+    setBoundaryRef(boundary);
   };
 
   useEffect(() => {
@@ -113,6 +151,12 @@ export default function HatDesignPage() {
       canvas.setWidth(CANVAS_WIDTH);
       canvas.setHeight(CANVAS_HEIGHT);
       canvas.setBackgroundColor("#fdfdf8", canvas.renderAll.bind(canvas));
+
+      // Gắn sự kiện kéo thả ảnh
+      const domCanvas = document.querySelector(".sample-canvas canvas");
+      domCanvas.addEventListener("dragover", (e) => e.preventDefault());
+      domCanvas.addEventListener("drop", handleFileDrop);
+
       addHatBackground();
     }
   }, [editor]);
@@ -141,6 +185,19 @@ export default function HatDesignPage() {
           <IconButton onClick={addImage}>
             <Image />
           </IconButton>
+        </Tooltip>
+
+        <Tooltip title="Đổi màu vùng thiết kế">
+          <label>
+            <input
+              type="color"
+              onChange={handleColorChange}
+              style={{ width: 0, height: 0, opacity: 0 }}
+            />
+            <IconButton component="span">
+              <ColorLens />
+            </IconButton>
+          </label>
         </Tooltip>
 
         <Tooltip title="Undo">
@@ -181,4 +238,3 @@ export default function HatDesignPage() {
     </Box>
   );
 }
-// import React, { useEffect } from "react";      
