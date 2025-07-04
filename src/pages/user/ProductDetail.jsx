@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -11,24 +11,71 @@ import {
   CardMedia,
   Avatar,
   Divider,
-} from '@mui/material';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import BalanceIcon from '@mui/icons-material/Balance';
-import CircleIcon from '@mui/icons-material/Circle';
-import Rating from '@mui/material/Rating';
+  CircularProgress,
+} from "@mui/material";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import BalanceIcon from "@mui/icons-material/Balance";
+import CircleIcon from "@mui/icons-material/Circle";
+import Rating from "@mui/material/Rating";
 import { useNavigate, useParams } from "react-router-dom";
-import Sidebar from '../../components/Sidebar';
+import Sidebar from "../../components/Sidebar";
 
 export default function ProductDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const handleAddToCart = () => {
     console.log("Product added to cart");
   };
 
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await fetch(`http://54.169.159.141:3000/product/get/${id}`);
+        const result = await res.json();
+
+        if (res.ok && result.success) {
+          setProduct(result.data);
+        } else {
+          alert("Failed to fetch product details.");
+        }
+      } catch (error) {
+        console.error("Fetch product detail error:", error);
+        alert("Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex" }}>
+        <Sidebar />
+        <Box sx={{ flexGrow: 1, p: 4, display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <CircularProgress />
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!product) {
+    return (
+      <Box sx={{ display: "flex" }}>
+        <Sidebar />
+        <Box sx={{ flexGrow: 1, p: 4 }}>
+          <Typography variant="h6">Product not found</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <Sidebar />
 
       <Box sx={{ flexGrow: 1, p: 4 }}>
@@ -38,10 +85,9 @@ export default function ProductDetail() {
             <Grid item xs={12} md={5}>
               <CardMedia
                 component="img"
-                image="https://nonson.vn/vnt_upload/product/NON_KET/MC001/DN1/thumbs/600_crop_nonson_06.png"
-                alt="Baseball cap"
-                sx={{ width: '100%', objectFit: 'contain' }}
-              />
+                image="https://zerdio.com.vn/wp-content/uploads/2021/03/M22.jpg"
+                alt={product.name}
+                sx={{ width: "100%", maxHeight: 350, objectFit: "contain" }}              />
             </Grid>
 
             {/* Product Info */}
@@ -50,19 +96,19 @@ export default function ProductDetail() {
                 label="Free shipping"
                 color="primary"
                 size="small"
-                sx={{ mb: 2, fontWeight: 'bold', backgroundColor: '#1e1e54' }}
+                sx={{ mb: 2, fontWeight: "bold", backgroundColor: "#1e1e54" }}
               />
 
               <Typography variant="h5" fontWeight="bold" mb={1}>
-                Baseball cap with minimalist style
+                {product.name}
               </Typography>
 
               <Box display="flex" alignItems="center" gap={2} mb={1}>
-                <Typography variant="body1" sx={{ textDecoration: 'line-through', color: 'gray' }}>
-                  200,000
+                <Typography variant="body1" sx={{ textDecoration: "line-through", color: "gray" }}>
+                  {(product.price * 1.2).toLocaleString()} VND
                 </Typography>
                 <Typography variant="h4" fontWeight="bold" color="primary">
-                  170,000
+                  {product.price.toLocaleString()} VND
                 </Typography>
               </Box>
 
@@ -76,12 +122,12 @@ export default function ProductDetail() {
                 fullWidth
                 onClick={handleAddToCart}
                 sx={{
-                  backgroundColor: '#3b82f6',
-                  color: '#fff',
-                  fontWeight: 'bold',
+                  backgroundColor: "#3b82f6",
+                  color: "#fff",
+                  fontWeight: "bold",
                   py: 1.5,
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 0 #1d4ed8',
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 0 #1d4ed8",
                   mb: 2,
                 }}
               >
@@ -89,9 +135,9 @@ export default function ProductDetail() {
               </Button>
 
               <Box display="flex" alignItems="center" gap={1} mb={3}>
-                <CircleIcon fontSize="small" sx={{ color: 'green' }} />
+                <CircleIcon fontSize="small" sx={{ color: "green" }} />
                 <Typography variant="body2" fontWeight="medium">
-                  50+ pcs. in stock.
+                  {product.stock_quantity}+ pcs. in stock.
                 </Typography>
               </Box>
 
@@ -100,11 +146,11 @@ export default function ProductDetail() {
                   variant="outlined"
                   startIcon={<BalanceIcon />}
                   sx={{
-                    textTransform: 'none',
+                    textTransform: "none",
                     px: 3,
                     py: 1,
-                    borderRadius: '10px',
-                    fontWeight: '500',
+                    borderRadius: "10px",
+                    fontWeight: "500",
                   }}
                 >
                   Add to cart
@@ -113,11 +159,11 @@ export default function ProductDetail() {
                   variant="outlined"
                   startIcon={<FavoriteBorderIcon />}
                   sx={{
-                    textTransform: 'none',
+                    textTransform: "none",
                     px: 3,
                     py: 1,
-                    borderRadius: '10px',
-                    fontWeight: '500',
+                    borderRadius: "10px",
+                    fontWeight: "500",
                   }}
                 >
                   Add to wishlist
@@ -134,15 +180,12 @@ export default function ProductDetail() {
             <Typography variant="h6" fontWeight="bold" gutterBottom>
               Product Description
             </Typography>
-            <Typography variant="body1">
-              This minimalist-style baseball cap is crafted from high-quality materials, offering comfort and durability.
-              Perfect for everyday wear, outdoor activities, or adding a casual touch to your outfit.
-            </Typography>
+            <Typography variant="body1">{product.description}</Typography>
           </Box>
 
           <Divider sx={{ my: 4 }} />
 
-          {/* Customer Reviews */}
+          {/* Customer Reviews (static for now) */}
           <Box>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
               Customer Reviews

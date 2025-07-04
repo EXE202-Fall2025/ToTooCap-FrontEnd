@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 import {
@@ -9,39 +9,54 @@ import {
   Card,
   CardContent,
   CardMedia,
+  CircularProgress,
 } from "@mui/material";
-import logohome from "../../assets/logohome.png"; // Adjust the path as necessary
+import logohome from "../../assets/logohome.png";
+
 const HomePage = () => {
   const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const handleProductDetail = (id) => {
     navigate(`/product-detail/${id}`);
   };
+
   const handleCreateProduct = () => {
     navigate("/choose-product");
   };
-  const trendingProducts = [
-    {
-      name: "Mũ Teddy - Phong cách trẻ trung",
-      price: "250.000 VND",
-      image:
-        "https://nonson.vn/vnt_upload/product/10_2024/MC024A-DN1-MOI/thumbs/600_crop_nonson_2.png",
-      status: "Mua ngay!",
-    },
-    {
-      name: "Mũ Teddy - Phong cách trẻ trung",
-      price: "250.000 VND",
-      image:
-        "https://nonson.vn/vnt_upload/product/10_2024/MC024A-DN1-MOI/thumbs/600_crop_nonson_2.png",
-      status: "Mua ngay!",
-    },
-    {
-      name: "Mũ Teddy - Phong cách trẻ trung",
-      price: "250.000 VND",
-      image:
-        "https://nonson.vn/vnt_upload/product/10_2024/MC024A-DN1-MOI/thumbs/600_crop_nonson_2.png",
-      status: "Mua ngay!",
-    },
-  ];
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const queryParams = new URLSearchParams({
+          currentPage: 1,
+          limit: 6,
+          sortBy: "createdAt",
+          sortOrder: "desc",
+        });
+
+        const res = await fetch(
+          `http://54.169.159.141:3000/product/get?${queryParams}`
+        );
+
+        const result = await res.json();
+
+        if (res.ok && result.success) {
+          setProducts(result.data || []);
+        } else {
+          alert("Failed to fetch products");
+        }
+      } catch (err) {
+        console.error("Fetch product error:", err);
+        alert("Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <Box display="flex" minHeight="100vh" bgcolor="#f5f5f5">
@@ -84,51 +99,62 @@ const HomePage = () => {
           </Box>
         </Box>
 
-        {/* Trending Products Section */}
+        {/* Product List Section */}
         <Box flex={1} p={4} maxWidth="100%">
           <Typography variant="h6" fontWeight="bold" mb={3}>
             Biến ý tưởng thành hiện thực ngay hôm nay!
           </Typography>
 
-          <Grid container spacing={3}>
-            {trendingProducts.map((product, index) => (
-              <Grid item xs={12} sm={6} md={4} lg={4} key={index}>
-                <Card
-                  onClick={() => handleProductDetail(index + 1)}
-                  sx={{
-                    border: "1px solid #ccc",
-                    borderRadius: 2,
-                    maxWidth: 300,
-                    margin: "0 auto",
-                  }}
-                >
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={product.image}
-                    alt={product.name}
-                  />
-                  <CardContent>
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight="medium"
-                      gutterBottom
-                    >
-                      {product.name}
-                    </Typography>
-                    <Typography variant="body1" fontWeight="bold" gutterBottom>
-                      Giá: {product.price}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {product.status}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+          {loading ? (
+            <Box display="flex" justifyContent="center">
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {products.map((product) => (
+                <Grid item xs={12} sm={6} md={4} lg={4} key={product._id}>
+                  <Card
+                    onClick={() => handleProductDetail(product._id)}
+                    sx={{
+                      border: "1px solid #ccc",
+                      borderRadius: 2,
+                      maxWidth: 300,
+                      margin: "0 auto",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image="https://zerdio.com.vn/wp-content/uploads/2021/03/M22.jpg"
+                      alt={product.name}
+                    />
+                    <CardContent>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="medium"
+                        gutterBottom
+                      >
+                        {product.name}
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        fontWeight="bold"
+                        gutterBottom
+                      >
+                        Giá: {product.price} VND
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Kho: {product.stock_quantity}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
 
-          <Box textAlign="center">
+          <Box textAlign="center" mt={4}>
             <Button variant="text" sx={{ textDecoration: "underline" }}>
               Xem thêm
             </Button>

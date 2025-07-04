@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Drawer,
@@ -26,26 +26,32 @@ import {
 } from "@mui/icons-material";
 
 import NotificationModal from "../pages/user/NotificationModal";
-import CatalogModal from "../pages/user/CatalogModal"; // ✅ Thêm dòng này
+import CatalogModal from "../pages/user/CatalogModal";
+import { UserContext } from "../context/UserContext";
 
 const drawerWidth = 240;
 
 const Sidebar = () => {
   const [openNotification, setOpenNotification] = useState(false);
-  const [openCatalogModal, setOpenCatalogModal] = useState(false); // ✅ modal catalog
+  const [openCatalogModal, setOpenCatalogModal] = useState(false);
   const [openHelp, setOpenHelp] = useState(false);
 
+  const { user } = useContext(UserContext);
   const navigate = useNavigate();
 
   const handleDashboardClick = () => navigate("/");
-  const handleAccountClick = () => navigate("/login");
-  const handleMyProductsClick = () => navigate("/my-products");
+const handleAccountClick = () => {
+  if (user) {
+    navigate("/user"); 
+  } else {
+    navigate("/login");
+  }
+};  const handleMyProductsClick = () => navigate("/my-products");
   const handleBrandingClick = () => navigate("/branding-gift");
   const handleOrdersClick = () => navigate("/orders");
   const handlePremiumClick = () => navigate("/premium");
-
   const handleNotificationsClick = () => setOpenNotification(true);
-  const handleCatalogClick = () => setOpenCatalogModal(true); // ✅ mở modal
+  const handleCatalogClick = () => setOpenCatalogModal(true);
 
   return (
     <>
@@ -83,7 +89,7 @@ const Sidebar = () => {
             <ListItemText primary="Notifications" />
           </ListItem>
 
-          <ListItem button onClick={handleCatalogClick}> 
+          <ListItem button onClick={handleCatalogClick}>
             <ListItemIcon><Inventory /></ListItemIcon>
             <ListItemText primary="Catalog" />
           </ListItem>
@@ -116,7 +122,7 @@ const Sidebar = () => {
 
           <Collapse in={openHelp} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
-              {/* Nested help items here */}
+              {/* Add help subitems if needed */}
             </List>
           </Collapse>
         </List>
@@ -124,12 +130,14 @@ const Sidebar = () => {
         <Box sx={{ mt: "auto", p: 2 }}>
           <ListItem button onClick={handleAccountClick}>
             <ListItemIcon><AccountCircle /></ListItemIcon>
-            <ListItemText primary="Account" secondary="Login/Register" />
+            <ListItemText
+              primary="Account"
+              secondary={user?.username || "Login/Register"}
+            />
           </ListItem>
         </Box>
       </Drawer>
 
-      {/* ✅ Modals */}
       <NotificationModal
         open={openNotification}
         onClose={() => setOpenNotification(false)}

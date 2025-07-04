@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import Sidebar from '../../components/Sidebar';
 import {
   Box,
@@ -10,7 +11,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
-
+import { UserContext } from '../../context/UserContext';
 const countries = [
   'Vietnam',
   'United States',
@@ -32,12 +33,30 @@ const UserPage = () => {
     city: '',
     zipCode: ''
   });
-
+  const navigate = useNavigate(); // Initialize navigate
   const handleInputChange = (field) => (event) => {
     setFormData({
       ...formData,
       [field]: event.target.value
     });
+  };
+  const { user } = useContext(UserContext);
+  useEffect(() => {
+  const userData = user || JSON.parse(localStorage.getItem('user'));
+
+  if (userData) {
+    setFormData((prev) => ({
+      ...prev,
+      fullName: userData.username || '',
+      email: userData.email || '',
+      phone: userData.phone || '',
+      address1: userData.address || '',
+    }));
+  }
+}, [user]);
+const handleLogout = () => {
+    localStorage.removeItem('user'); // Clear user data from localStorage
+    navigate('/login'); // Redirect to login page
   };
 
   return (
@@ -199,6 +218,16 @@ const UserPage = () => {
                 Use a different address for receiving product samples
               </Button>
             </Box>
+          </Box>
+          <Box mt={4}>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleLogout}
+              sx={{ textTransform: 'none' }}
+            >
+              Log Out
+            </Button>
           </Box>
         </Paper>
       </Box>
