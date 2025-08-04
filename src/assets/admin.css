@@ -1,0 +1,23 @@
+/* Admin Dashboard Custom Styles */
+
+.MuiCardContent-root.css-1lt5qva-MuiCardContent-root {
+  width: 500px !important;
+}
+
+/* Additional admin dashboard styles */
+.admin-metric-card .MuiCardContent-root {
+  width: 500px !important;
+}
+.MuiCardContent-root css-1lt5qva-MuiCardContent-root {
+  width: 500px !important;
+}
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .MuiCardContent-root.css-1lt5qva-MuiCardContent-root {
+    width: 100% !important;
+  }
+
+  .admin-metric-card .MuiCardContent-root {
+    width: 100% !important;
+  }
+}

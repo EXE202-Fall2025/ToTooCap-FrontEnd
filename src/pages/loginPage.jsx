@@ -30,24 +30,55 @@ const LoginPage = () => {
   };
 
   const handleLogin = async () => {
-    try {
-      const userRes = await fetch("http://54.169.159.141:3000/auth/user/get/loginUser");
-      const userData = await userRes.json();
+  try {
+    const userRes = await fetch("http://54.169.159.141:3000/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: formData.username,
+        password: formData.password,
+      }),
+    });
 
-      if (userData.role === "customer") {
-        navigate("/home");
-      } else if (userData.role === "manager") {
-        navigate("/manager");
-      } else if (userData.role === "admin") {
-        navigate("/admin");
+    const userData = await userRes.json();
+    if (userRes.ok && userData.accessToken) {
+      // Lưu accessToken vào localStorage
+      localStorage.setItem("accessToken", userData.accessToken);
+
+      // Gọi API lấy thông tin user
+      const infoRes = await fetch("http://54.169.159.141:3000/auth/user/get/loginUser", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${userData.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const infoData = await infoRes.json();
+
+      if (infoRes.ok && infoData.success && infoData.data) {
+        const role = infoData.data.role;
+        if (role === "customer") {
+          navigate("/home");
+        } else if (role === "manager") {
+          navigate("/manager");
+        } else if (role === "admin") {
+          navigate("/admin");
+        } else {
+          alert("Role không hợp lệ!");
+        }
       } else {
-        alert("Role không hợp lệ!");
+        alert(infoData.message || "Không lấy được thông tin người dùng!");
       }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      alert("Đăng nhập thất bại!");
+    } else {
+      alert(userData.message || "Đăng nhập thất bại!");
     }
-  };
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    alert("Đăng nhập thất bại!");
+  }
+};
 
   const handleRegister = () => {
     navigate("/register");
