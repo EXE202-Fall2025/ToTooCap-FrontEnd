@@ -12,58 +12,47 @@ import {
   CircularProgress,
 } from "@mui/material";
 import logohome from "../../assets/logohome.png";
+import { fetchAllProducts } from "../../api/product.service";
 
+// Component trang chủ của user
 const HomePage = () => {
-  const navigate = useNavigate();
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // Hook để chuyển trang
+  const [products, setProducts] = useState([]); // State lưu danh sách sản phẩm
+  const [loading, setLoading] = useState(true); // State kiểm soát loading
 
+  // Hàm chuyển sang trang chi tiết sản phẩm khi click vào sản phẩm
   const handleProductDetail = (id) => {
     navigate(`/product-detail/${id}`);
   };
 
+  // Hàm chuyển sang trang chọn sản phẩm để tạo mới
   const handleCreateProduct = () => {
     navigate("/choose-product");
   };
 
+  // useEffect gọi API lấy danh sách sản phẩm khi trang được load
   useEffect(() => {
-    const fetchProducts = async () => {
+    const getProducts = async () => {
+      setLoading(true); // Bắt đầu loading
       try {
-        const queryParams = new URLSearchParams({
-          currentPage: 1,
-          limit: 6,
-          sortBy: "createdAt",
-          sortOrder: "desc",
-        });
-
-        const res = await fetch(
-          `http://54.169.159.141:3000/product/get?${queryParams}`
-        );
-
-        const result = await res.json();
-
-        if (res.ok && result.success) {
-          setProducts(result.data || []);
-        } else {
-          alert("Failed to fetch products");
-        }
+        const products = await fetchAllProducts(); // Gọi API lấy sản phẩm
+        setProducts(products); // Lưu vào state
       } catch (err) {
-        console.error("Fetch product error:", err);
-        alert("Something went wrong.");
+        alert("Không thể lấy danh sách sản phẩm");
       } finally {
-        setLoading(false);
+        setLoading(false); // Kết thúc loading
       }
     };
-
-    fetchProducts();
+    getProducts();
   }, []);
 
   return (
+    // Layout tổng: chia làm Sidebar và phần nội dung chính
     <Box display="flex" minHeight="100vh" bgcolor="#f5f5f5">
       <Sidebar />
 
       <Box flex={1} p={4}>
-        {/* Hero Section */}
+        {/* Hero Section: Giới thiệu và nút tạo sản phẩm */}
         <Box
           display="flex"
           justifyContent="space-between"
@@ -90,6 +79,7 @@ const HomePage = () => {
               Tạo sản phẩm
             </Button>
           </Box>
+          {/* Ảnh minh họa bên phải */}
           <Box>
             <img
               src={logohome}
@@ -99,17 +89,19 @@ const HomePage = () => {
           </Box>
         </Box>
 
-        {/* Product List Section */}
+        {/* Product List Section: Danh sách sản phẩm hiện có */}
         <Box flex={1} p={4} maxWidth="100%">
           <Typography variant="h6" fontWeight="bold" mb={3}>
             Biến ý tưởng thành hiện thực ngay hôm nay!
           </Typography>
 
+          {/* Hiển thị loading khi đang lấy dữ liệu */}
           {loading ? (
             <Box display="flex" justifyContent="center">
               <CircularProgress />
             </Box>
           ) : (
+            // Hiển thị danh sách sản phẩm dạng lưới
             <Grid container spacing={3}>
               {products.map((product) => (
                 <Grid item xs={12} sm={6} md={4} lg={4} key={product._id}>
@@ -123,6 +115,7 @@ const HomePage = () => {
                       cursor: "pointer",
                     }}
                   >
+                    {/* Ảnh sản phẩm */}
                     <CardMedia
                       component="img"
                       height="200"
@@ -130,6 +123,7 @@ const HomePage = () => {
                       alt={product.name}
                     />
                     <CardContent>
+                      {/* Tên sản phẩm */}
                       <Typography
                         variant="subtitle1"
                         fontWeight="medium"
@@ -137,6 +131,7 @@ const HomePage = () => {
                       >
                         {product.name}
                       </Typography>
+                      {/* Giá sản phẩm */}
                       <Typography
                         variant="body1"
                         fontWeight="bold"
@@ -144,6 +139,7 @@ const HomePage = () => {
                       >
                         Giá: {product.price} VND
                       </Typography>
+                      {/* Số lượng tồn kho */}
                       <Typography variant="body2" color="textSecondary">
                         Kho: {product.stock_quantity}
                       </Typography>
@@ -154,6 +150,7 @@ const HomePage = () => {
             </Grid>
           )}
 
+          {/* Nút xem thêm (chưa có chức năng) */}
           <Box textAlign="center" mt={4}>
             <Button variant="text" sx={{ textDecoration: "underline" }}>
               Xem thêm
