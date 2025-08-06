@@ -1,31 +1,79 @@
-import React from "react";
-import { Box, Typography, Button } from "@mui/material";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
 import Sidebar from "../../../components/Sidebar";
-import { useNavigate } from "react-router-dom";
-const productMock = {
-  id: 1,
-  name: "TotooCap",
-  tagline: "Sự lựa chọn hoàn hảo",
-  description:
-    "Teddy Cap mang đến cho bạn một chiếc mũ không chỉ đẹp mà còn bền, thoáng mát, phù hợp cho mọi phong cách. Dù là đi chơi, đi làm hay dạo phố, Teddy Cap luôn là người bạn đồng hành tuyệt vời!",
-  image:
-    "https://nonson.vn/vnt_upload/product/NON_SNAPBACK/MC210/DN9/nonson_01_1.png",
-  price: "250.000 VND",
-};
+import ProductService from "../../../services/productService";
 
 export default function ProductDesignDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const response = await ProductService.getProductById(id);
+        if (response.success && response.data) {
+          setProduct(response.data);
+        } else {
+          setError("Không tìm thấy sản phẩm.");
+        }
+      } catch (err) {
+        setError("Có lỗi xảy ra khi tải sản phẩm.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
 
   const handleDesignClick = () => {
-    navigate("/hat-design");
+    navigate(`/hat-design/${id}`, { state: { product } });
   };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Đang tải sản phẩm...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex" }}>
       <Sidebar />
-
       <Box sx={{ flex: 1, p: 4 }}>
         <Box
           sx={{
@@ -48,8 +96,8 @@ export default function ProductDesignDetail() {
             }}
           >
             <img
-              src={productMock.image}
-              alt={productMock.name}
+              src={product.image_url}
+              alt={product.name}
               style={{
                 width: "100%",
                 maxHeight: 350,
@@ -61,14 +109,7 @@ export default function ProductDesignDetail() {
           {/* Cột phải - nội dung */}
           <Box sx={{ flex: 1 }}>
             <Typography variant="h6" fontWeight="bold">
-              {productMock.name}
-              <Typography
-                component="span"
-                variant="caption"
-                sx={{ ml: 1, fontStyle: "italic", color: "#666" }}
-              >
-                {productMock.tagline}
-              </Typography>
+              ProductName: {product.name}
             </Typography>
 
             <Typography
@@ -80,11 +121,15 @@ export default function ProductDesignDetail() {
             </Typography>
 
             <Typography variant="body1" sx={{ mb: 3 }}>
-              {productMock.description}
+              {product.description}
             </Typography>
 
             <Typography variant="h6" color="error" fontWeight="bold" mb={2}>
-              Giá chỉ từ {productMock.price}
+              Giá chỉ từ {product.price?.toLocaleString()} VND
+            </Typography>
+
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Tồn kho: {product.stock_quantity}
             </Typography>
 
             <Button
@@ -95,13 +140,13 @@ export default function ProductDesignDetail() {
                 px: 3,
                 py: 1,
               }}
-                onClick={handleDesignClick}
+              onClick={handleDesignClick}
             >
               Bắt đầu thiết kế ngay!
             </Button>
           </Box>
         </Box>
-      </Box>
+      </Box>{" "}
     </Box>
   );
 }

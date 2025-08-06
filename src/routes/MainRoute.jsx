@@ -12,9 +12,9 @@ import DashboardPage from "../pages/user/DashboardPage";
 import LoginPage from "../pages/loginPage";
 import MyProducts from "../pages/user/MyProducts";
 import BrandingGift from "../pages/user/BrandingGift";
-import Orders from "../pages/user/Orders"; 
-import Premium from "../pages/user/Premium"; 
-import ProductDetail from "../pages/user/ProductDetail"; 
+import Orders from "../pages/user/Orders";
+import Premium from "../pages/user/Premium";
+import ProductDetail from "../pages/user/ProductDetail";
 import PaymentPage from "../pages/user/PaymentPage";
 import ChooseProductPage from "../pages/user/Design/ChooseProductPage";
 import ProductDesignDetail from "../pages/user/Design/ProductDesignDetail";
@@ -43,9 +43,10 @@ const MainRoute = () => {
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/choose-product" element={<ChooseProductPage />} />
         <Route path="/product-design/:id" element={<ProductDesignDetail />} />
-        <Route path="/hat-design" element={<HatDesignPage />} />
-        
+        <Route path="/hat-design/:productId" element={<HatDesignPage />} />
+
         {/* Admin Routes with AdminLayout */}
+
         <Route path="/admin" element={<AdminLayout><AdminPage /></AdminLayout>} />
         <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
         <Route path="/admin/orders" element={<AdminLayout><OrderManagement /></AdminLayout>} />
@@ -57,7 +58,7 @@ const MainRoute = () => {
         <Route path="/admin/notifications" element={<AdminLayout><div>Thông báo - Coming soon</div></AdminLayout>} />
         <Route path="/admin/security" element={<AdminLayout><div>Bảo mật - Coming soon</div></AdminLayout>} />
         <Route path="/admin/support/*" element={<AdminLayout><div>Hỗ trợ - Coming soon</div></AdminLayout>} />
-        
+
         {/* Routes accessible by manager */}
         <Route path="/manager" element={<ManagerPage />} />
       </Routes>

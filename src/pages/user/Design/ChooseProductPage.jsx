@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -8,36 +8,78 @@ import {
   Card,
   CardContent,
   CardMedia,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import Sidebar from "../../../components/Sidebar";
-
-const productList = [
-  {
-    id: 1,
-    name: "Mũ Teddy - Phong cách trẻ trung",
-    price: "250.000 VND",
-    image:
-      "https://www.chapi.vn/img/product/2022/5/15/mu-luoi-trai-theu-classic-27-500x500.jpg",
-    large: true,
-  },
-  {
-    id: 2,
-    name: "Mũ Teddy - Phong cách trẻ trung",
-    price: "250.000 VND",
-    image:
-      "https://img.vuahanghieu.com/unsafe/0x0/left/top/smart/filters:quality(90)/https://admin.vuahanghieu.com/upload/news/content/2022/05/mu-luoi-trai-cho-be-1-jpg-1653899522-30052022153202.jpg",
-  },
-  {
-    id: 3,
-    name: "Mũ Teddy - Phong cách trẻ trung",
-    price: "250.000 VND",
-    image:
-      "https://product.hstatic.net/200000025394/product/tech_rain.rdy_djen_ib2666_01_standard_98ad23e5cc9e4baeb5d5efa1616a28dd_57e73bb0b8584ce88157b2492ab61bdb_master.jpg",
-  },
-];
+import ProductService from "../../../services/productService"; // Sử dụng service có sẵn
 
 const ChooseProductPage = () => {
   const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Gọi API lấy danh sách sản phẩm
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await ProductService.getAllProducts(1, 20); // Lấy 20 sản phẩm đầu tiên
+
+        if (response.success && response.data) {
+          setProducts(response.data);
+        } else {
+          setError("Không thể tải danh sách sản phẩm");
+        }
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setError("Có lỗi xảy ra khi tải sản phẩm");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Handle click để chuyển sang trang thiết kế
+  const handleProductDetail = (product) => {
+    navigate(`/product-design/${product._id}`, {
+      state: { product },
+    });
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex" }}>
+        <Sidebar />
+        <Box
+          sx={{
+            flexGrow: 1,
+            p: 4,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <CircularProgress />
+          <Typography sx={{ ml: 2 }}>Đang tải sản phẩm...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ display: "flex" }}>
+        <Sidebar />
+        <Box sx={{ flexGrow: 1, p: 4 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -60,66 +102,137 @@ const ChooseProductPage = () => {
 
         {/* Product Layout */}
         <Grid container spacing={3} justifyContent="center">
-          {/* Left large image */}
-          <Grid item xs={12} md={6} sx={{ mt: 3 }}>
-            <Card
-              sx={{
-                p: 2,
-                transform: "scale(1.15)",
-                transition: "transform 0.2s",
-                cursor: "pointer",
-              }}
-              onClick={() => navigate(`/product-design/${productList[0].id}`)}
-            >
-              <CardMedia
-                component="img"
-                image={productList[0].image}
-                alt={productList[0].name}
-                sx={{ width: "100%", objectFit: "contain", p: 2, height: 300 }}
-              />
-              <CardContent sx={{ backgroundColor: "#f5f5f5" }}>
-                <Typography>{productList[0].name}</Typography>
-                <Typography fontWeight="bold">
-                  Giá: {productList[0].price}
-                </Typography>
-                <Typography>Thiết kế ngay!</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+          {products.length > 0 && (
+            <>
+              {/* Left large image - Sản phẩm đầu tiên */}
+              <Grid item xs={12} md={6} sx={{ mt: 3 }}>
+                <Card
+                  sx={{
+                    p: 2,
+                    transform: "scale(1.15)",
+                    transition: "transform 0.2s",
+                    cursor: "pointer",
+                    "&:hover": {
+                      transform: "scale(1.2)",
+                    },
+                  }}
+                  onClick={() => handleProductDetail(products[0])}
+                >
+                  <CardMedia
+                    component="img"
+                    image={
+                      products[0].image_url || "https://via.placeholder.com/300"
+                    }
+                    alt={products[0].name}
+                    sx={{
+                      width: "100%",
+                      objectFit: "contain",
+                      p: 2,
+                      height: 300,
+                    }}
+                  />
+                  <CardContent sx={{ backgroundColor: "#f5f5f5" }}>
+                    <Typography>{products[0].name}</Typography>
+                    <Typography fontWeight="bold">
+                      Giá: {products[0].price?.toLocaleString()} VND
+                    </Typography>
+                    <Typography>Thiết kế ngay!</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
 
-          {/* Right 2 smaller images */}
-          <Grid item xs={12} md={6} sx={{ mt: 10 }}>
+              {/* Right smaller images - Các sản phẩm còn lại */}
+              <Grid item xs={12} md={6} sx={{ mt: 10 }}>
+                <Grid container spacing={3}>
+                  {products.slice(1, 5).map((product) => (
+                    <Grid item xs={12} sm={6} key={product._id}>
+                      <Card
+                        sx={{
+                          cursor: "pointer",
+                          "&:hover": {
+                            transform: "scale(1.05)",
+                            transition: "transform 0.2s",
+                          },
+                        }}
+                        onClick={() => handleProductDetail(product)}
+                      >
+                        <CardMedia
+                          component="img"
+                          image={
+                            product.image_url ||
+                            "https://via.placeholder.com/160"
+                          }
+                          alt={product.name}
+                          sx={{
+                            width: "100%",
+                            objectFit: "contain",
+                            p: 2,
+                            height: 160,
+                          }}
+                        />
+                        <CardContent sx={{ backgroundColor: "#f5f5f5" }}>
+                          <Typography>{product.name}</Typography>
+                          <Typography fontWeight="bold">
+                            Giá: {product.price?.toLocaleString()} VND
+                          </Typography>
+                          <Typography>Thiết kế ngay!</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Grid>
+            </>
+          )}
+        </Grid>
+
+        {/* Hiển thị tất cả sản phẩm dạng grid */}
+        {products.length > 5 && (
+          <Box sx={{ mt: 6 }}>
+            <Typography variant="h5" fontWeight="bold" mb={3}>
+              Tất cả sản phẩm
+            </Typography>
             <Grid container spacing={3}>
-              {productList.slice(1).map((product) => (
-                <Grid item xs={12} sm={6} key={product.id}>
+              {products.map((product) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
                   <Card
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => navigate(`/design-detail/${product.id}`)}
+                    sx={{
+                      cursor: "pointer",
+                      "&:hover": {
+                        transform: "scale(1.05)",
+                        transition: "transform 0.2s",
+                      },
+                    }}
+                    onClick={() => handleProductDetail(product)}
                   >
                     <CardMedia
                       component="img"
-                      image={product.image}
+                      image={
+                        product.image_url || "https://via.placeholder.com/200"
+                      }
                       alt={product.name}
                       sx={{
                         width: "100%",
                         objectFit: "contain",
                         p: 2,
-                        height: 160,
+                        height: 200,
                       }}
                     />
                     <CardContent sx={{ backgroundColor: "#f5f5f5" }}>
-                      <Typography>{product.name}</Typography>
-                      <Typography fontWeight="bold">
-                        Giá: {product.price}
+                      <Typography noWrap>{product.name}</Typography>
+                      <Typography fontWeight="bold" color="primary">
+                        {product.price?.toLocaleString()} VND
                       </Typography>
-                      <Typography>Thiết kế ngay!</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Tồn kho: {product.stock_quantity}
+                      </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
               ))}
             </Grid>
-          </Grid>
-        </Grid>
+          </Box>
+        )}
       </Box>
     </Box>
   );
