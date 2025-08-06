@@ -37,24 +37,45 @@ const LoginPage = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: formData.username,
+          username: formData.username, // Đổi từ username thành email
           password: formData.password,
         }),
       });
 
-      const infoData = await infoRes.json();
+      const userData = await userRes.json(); // Đổi từ infoData thành userData
 
-      if (infoRes.ok && infoData.success && infoData.data) {
-        const role = infoData.data.role;
+      if (userRes.ok && userData.success) {
+        // Sử dụng userRes thay vì infoRes
+        // Lưu token vào localStorage
+        localStorage.setItem("accessToken", userData.accessToken);
+        localStorage.setItem("refreshToken", userData.refreshToken);
+
+        // Gọi API để lấy thông tin user
+        const infoRes = await fetch(
+          "http://54.169.159.141:3000/auth/user/get/loginUser",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${userData.accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const infoData = await infoRes.json();
+
+        if (infoRes.ok && infoData.success && infoData.data) {
+          const role = infoData.data.role;
           localStorage.setItem("user", JSON.stringify(infoData.data));
-        setUser(infoData.data);
-        if (role === "customer") {
-          navigate("/");
-        } else if (role === "manager") {
-          navigate("/manager");
-        } else if (role === "admin") {
-          navigate("/admin");
+          setUser(infoData.data);
 
+          if (role === "customer") {
+            navigate("/");
+          } else if (role === "manager") {
+            navigate("/manager");
+          } else if (role === "admin") {
+            navigate("/admin");
+          }
         } else {
           alert(infoData.message || "Không lấy được thông tin người dùng!");
         }
@@ -62,7 +83,7 @@ const LoginPage = () => {
         alert(userData.message || "Đăng nhập thất bại!");
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.error("Error during login:", error);
       alert("Đăng nhập thất bại!");
     }
   };
