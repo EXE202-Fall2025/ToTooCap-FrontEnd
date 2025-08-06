@@ -617,11 +617,22 @@ export default function HatDesignPage() {
     try {
       // Hiển thị loading
       console.log("Đang lưu thiết kế...");
+      const prevZoom = editor.canvas.getZoom();
+      const prevViewport = editor.canvas.viewportTransform.slice();
 
+      // Reset zoom về 1 và viewport về mặc định
+      editor.canvas.setZoom(1);
+      editor.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+      editor.canvas.renderAll();
       const dataURL = editor.canvas.toDataURL({
         format: "png",
-        quality: 0.8,
+        quality: 0.92,
+        multiplier: 5, // Tăng độ phân giải ảnh
       });
+      // Khôi phục lại zoom và viewport cho người dùng
+      editor.canvas.setZoom(prevZoom);
+      editor.canvas.setViewportTransform(prevViewport);
+      editor.canvas.renderAll();
 
       // Upload ảnh lên Cloudinary
       console.log("Uploading to Cloudinary...");
@@ -760,8 +771,7 @@ export default function HatDesignPage() {
       {/* Header */}
       <Box
         display="flex"
-        gap={1}
-        justifyContent="center"
+        justifyContent="space-between" // Thay đổi thành space-between
         alignItems="center"
         p={2}
         sx={{
@@ -771,38 +781,49 @@ export default function HatDesignPage() {
           flexShrink: 0,
         }}
       >
-        <Typography variant="h6" sx={{ mr: 2, color: "#666" }}>
-          Thiết kế: {productInfo.name}
-        </Typography>
+        {/* Nút back ở bên trái */}
+        <Button
+          variant="outlined"
+          onClick={() => navigate(-1)}
+          sx={{ minWidth: 36 }}
+        >
+          ←
+        </Button>
 
-        <Button
-          size="medium"
-          variant={view === "front" ? "contained" : "outlined"}
-          onClick={() => handleChangeView("front")}
-        >
-          Trước
-        </Button>
-        <Button
-          size="medium"
-          variant={view === "back" ? "contained" : "outlined"}
-          onClick={() => handleChangeView("back")}
-        >
-          Sau
-        </Button>
-        <Button
-          size="medium"
-          variant={view === "left" ? "contained" : "outlined"}
-          onClick={() => handleChangeView("left")}
-        >
-          Trái
-        </Button>
-        <Button
-          size="medium"
-          variant={view === "right" ? "contained" : "outlined"}
-          onClick={() => handleChangeView("right")}
-        >
-          Phải
-        </Button>
+        {/* Các nút view và title ở giữa */}
+        <Box display="flex" gap={1} alignItems="center">
+          <Button
+            size="medium"
+            variant={view === "front" ? "contained" : "outlined"}
+            onClick={() => handleChangeView("front")}
+          >
+            Trước
+          </Button>
+          <Button
+            size="medium"
+            variant={view === "back" ? "contained" : "outlined"}
+            onClick={() => handleChangeView("back")}
+          >
+            Sau
+          </Button>
+          <Button
+            size="medium"
+            variant={view === "left" ? "contained" : "outlined"}
+            onClick={() => handleChangeView("left")}
+          >
+            Trái
+          </Button>
+          <Button
+            size="medium"
+            variant={view === "right" ? "contained" : "outlined"}
+            onClick={() => handleChangeView("right")}
+          >
+            Phải
+          </Button>
+        </Box>
+
+        {/* Box rỗng để cân bằng layout */}
+        <Box sx={{ minWidth: 36 }}></Box>
       </Box>
 
       <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>

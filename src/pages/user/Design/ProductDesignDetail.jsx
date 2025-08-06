@@ -83,6 +83,13 @@ export default function ProductDesignDetail() {
             alignItems: "flex-start",
           }}
         >
+          <Button
+            variant="outlined"
+            onClick={() => navigate(-1)}
+            sx={{ mb: 3, minWidth: 36 }}
+          >
+            ← Quay lại
+          </Button>
           {/* Cột trái - ảnh */}
           <Box
             sx={{

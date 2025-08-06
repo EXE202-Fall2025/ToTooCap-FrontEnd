@@ -126,6 +126,9 @@ const LoginPage = () => {
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLogin();
+              }}
             />
             <span onClick={togglePassword} className="login-eye-icon">
               {showPassword ? <IoIosEye /> : <IoIosEyeOff />}
