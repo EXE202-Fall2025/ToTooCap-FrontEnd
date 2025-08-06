@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Box, IconButton, Tooltip, Button, Typography } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  Button,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
 import {
   Undo,
   Redo,
@@ -11,19 +18,23 @@ import {
 } from "@mui/icons-material";
 import { FabricJSCanvas, useFabricJSEditor } from "fabricjs-react";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import anhnon from "../../../assets/image_non.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import ProductService from "../../../services/productService";
+import CloudinaryService from "../../../services/cloudinary.service";
 
 export default function HatDesignPage() {
   const navigate = useNavigate();
-  // Hook để quản lý fabric.js editor và canvas
+  const { productId } = useParams();
+  const location = useLocation();
   const { editor, onReady } = useFabricJSEditor();
 
-  // === REFS ===
   const fileInputRef = useRef(null);
   const [boundaryRef, setBoundaryRef] = useState(null);
+  const isRestoringRef = useRef(false);
 
-  // === STATE QUẢN LÝ VIEWS ===
+  const [productInfo, setProductInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [view, setView] = useState("front");
   const [designs, setDesigns] = useState({
     front: null,
@@ -32,35 +43,29 @@ export default function HatDesignPage() {
     right: null,
   });
 
-  // === STATE QUẢN LÝ UNDO/REDO ===
-  const [undoStack, setUndoStack] = useState([]);
-  const [redoStack, setRedoStack] = useState([]);
-  const isRestoringRef = useRef(false);
-
-  // === STATE QUẢN LÝ ZOOM ===
-  const [zoomLevel, setZoomLevel] = useState(1);
-
-  // === STATE QUẢN LÝ CANVAS SIZE ===
-  const [canvasSize, setCanvasSize] = useState({
-    width: window.innerWidth - 80, // Trừ sidebar width
-    height: window.innerHeight - 80, // Trừ header height
+  // Thêm state cho ảnh từng mặt từ API
+  const [hatImages, setHatImages] = useState({
+    front: null,
+    back: null,
+    left: null,
+    right: null,
   });
 
-  // === CONSTANTS ===
+  const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [canvasSize, setCanvasSize] = useState({
+    width: window.innerWidth - 80,
+    height: window.innerHeight - 80,
+  });
+
+  const [selectedObject, setSelectedObject] = useState(null);
+
   const SIDEBAR_WIDTH = 80;
   const HEADER_HEIGHT = 80;
 
-  // === DATA ===
-  const hatImages = {
-    front: anhnon, // Ảnh local
-    back: anhnon, // Tạm thời dùng cùng ảnh để test
-    left: anhnon,
-    right: anhnon,
-  };
-
-  // === HELPER FUNCTION: CLEANUP BOUNDARY - CẢI TIẾN ===
+  // === HELPER FUNCTIONS FROM OLD CODE ===
   const cleanupBoundary = (canvas) => {
-    // Tìm và xóa TẤT CẢ boundary objects
     const objects = canvas.getObjects();
     const boundariesToRemove = objects.filter(
       (obj) =>
@@ -73,11 +78,9 @@ export default function HatDesignPage() {
     boundariesToRemove.forEach((boundary) => {
       canvas.remove(boundary);
     });
-
     setBoundaryRef(null);
   };
 
-  // === HELPER FUNCTION: CREATE BOUNDARY ===
   const createBoundary = (canvas, hatImg) => {
     const boundaryWidth = hatImg.width * hatImg.scaleX * 0.252;
     const boundaryHeight = hatImg.height * hatImg.scaleY * 0.17;
@@ -90,13 +93,12 @@ export default function HatDesignPage() {
       top: boundaryTop,
       width: boundaryWidth,
       height: boundaryHeight,
-      fill: "rgba(255, 107, 107, 0.15)",
-      stroke: "rgba(255, 107, 107, 0.8)",
+      fill: "transparent",
+      stroke: "rgba(145, 133, 133, 0.8)",
       strokeWidth: 1,
       strokeDashArray: [8, 5],
       selectable: false,
       evented: false,
-      // Thêm custom property để dễ nhận diện
       isBoundary: true,
     });
 
@@ -105,18 +107,14 @@ export default function HatDesignPage() {
     return boundary;
   };
 
-  // === HELPER FUNCTION: SAVE DESIGN WITHOUT BOUNDARY ===
   const saveDesignWithoutBoundary = (canvas) => {
-    // Tạm thời ẩn boundary trước khi save
     const tempBoundary = boundaryRef;
     if (tempBoundary) {
       canvas.remove(tempBoundary);
     }
 
-    // Lấy design data
     const designData = canvas.toJSON(["selectable", "evented"]);
 
-    // Thêm lại boundary nếu có
     if (tempBoundary && view === "front") {
       canvas.add(tempBoundary);
       canvas.bringToFront(tempBoundary);
@@ -125,38 +123,213 @@ export default function HatDesignPage() {
     return designData;
   };
 
-  // === RESIZE HANDLER ===
+  // === FETCH PRODUCT INFO ===
   useEffect(() => {
-    const handleResize = () => {
-      const newWidth = window.innerWidth - SIDEBAR_WIDTH;
-      const newHeight = window.innerHeight - HEADER_HEIGHT;
+    if (!productId) {
+      alert("Không có thông tin sản phẩm!");
+      navigate("/choose-product");
+      return;
+    }
 
-      setCanvasSize({
-        width: newWidth,
-        height: newHeight,
-      });
+    if (location.state?.product) {
+      setProductInfo(location.state.product);
+      setLoading(false);
+    } else {
+      fetchProductInfo(productId);
+    }
+  }, [productId, location.state, navigate]);
 
-      // Resize canvas nếu đã khởi tạo
-      if (editor?.canvas) {
-        editor.canvas.setWidth(newWidth);
-        editor.canvas.setHeight(newHeight);
-        editor.canvas.renderAll();
+  const fetchProductInfo = async (id) => {
+    try {
+      const response = await ProductService.getProductById(id);
+      if (response.success) {
+        setProductInfo(response.data);
+      } else {
+        throw new Error("Product not found");
+      }
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      alert("Không tìm thấy sản phẩm!");
+      navigate("/choose-product");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // === FETCH HAT IMAGES ===
+  useEffect(() => {
+    if (!productId) return;
+    const fetchImages = async () => {
+      try {
+        // Thử endpoint khác hoặc thêm filter phía client
+        const res = await fetch(
+          `http://54.169.159.141:3000/image/get?currentPage=1&limit=100&sortBy=createdAt&sortOrder=desc`
+        );
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          // Filter phía client theo product_id
+          const productImages = data.data.filter(
+            (img) => img.product_id === productId
+          );
+
+          const images = {
+            front: null,
+            back: null,
+            left: null,
+            right: null,
+          };
+
+          productImages.forEach((img) => {
+            if (["front", "back", "left", "right"].includes(img.name)) {
+              images[img.name] = img.image_url;
+            }
+          });
+
+          setHatImages(images);
+          console.log("Loaded images for product:", productId, images);
+        }
+      } catch (err) {
+        console.error("Không thể lấy ảnh các mặt sản phẩm:", err);
       }
     };
+    fetchImages();
+  }, [productId]);
 
-    window.addEventListener("resize", handleResize);
+  // === CANVAS SETUP (UPDATED WITH OLD LOGIC) ===
+  useEffect(() => {
+    if (!editor?.canvas) return;
 
-    // Set initial size
-    handleResize();
+    const canvas = editor.canvas;
 
-    return () => window.removeEventListener("resize", handleResize);
+    // Clear canvas và cleanup boundary trước
+    canvas.clear();
+    cleanupBoundary(canvas);
+
+    // Reset zoom khi chuyển view
+    setZoomLevel(1);
+    canvas.setZoom(1);
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    // Đảm bảo canvas có kích thước theo màn hình
+    canvas.setWidth(canvasSize.width);
+    canvas.setHeight(canvasSize.height);
+    if (!hatImages[view]) {
+      // Save initial state ngay cả khi không có ảnh
+      const initialState = canvas.toJSON();
+      setUndoStack([initialState]);
+      setRedoStack([]);
+      canvas.renderAll();
+      return; // Dừng lại, không load fabric.Image
+    }
+
+    // Load ảnh mũ vào canvas (không phải background)
+    window.fabric.Image.fromURL(
+      hatImages[view],
+      (hatImg) => {
+        // Tính scale để ảnh chiếm 40% canvas
+        const targetWidth = canvasSize.width * 0.4;
+        const targetHeight = canvasSize.height * 0.4;
+
+        const scaleX = targetWidth / hatImg.width;
+        const scaleY = targetHeight / hatImg.height;
+        const scale = Math.min(scaleX, scaleY);
+
+        // Tính toán vị trí chính xác của ảnh mũ
+        const hatWidth = hatImg.width * scale;
+        const hatHeight = hatImg.height * scale;
+        const hatLeft = canvasSize.width / 2 - hatWidth / 2;
+        const hatTop = canvasSize.height / 2 - hatHeight / 2;
+
+        hatImg.set({
+          scaleX: scale,
+          scaleY: scale,
+          left: hatLeft,
+          top: hatTop,
+          selectable: false,
+          evented: false,
+        });
+
+        canvas.add(hatImg);
+        canvas.sendToBack(hatImg);
+
+        // CHỈ TẠO BOUNDARY KHI Ở VIEW "FRONT"
+        let currentBoundary = null;
+        if (view === "front") {
+          currentBoundary = createBoundary(canvas, hatImg);
+        }
+
+        // Load thiết kế cũ nếu có
+        if (designs[view]) {
+          canvas.loadFromJSON(designs[view], () => {
+            cleanupBoundary(canvas);
+
+            if (view === "front") {
+              const hatImgAfterLoad = canvas
+                .getObjects()
+                .find((obj) => obj.type === "image" && !obj.selectable);
+              if (hatImgAfterLoad) {
+                currentBoundary = createBoundary(canvas, hatImgAfterLoad);
+              }
+            }
+            canvas.renderAll();
+          });
+        } else {
+          canvas.renderAll();
+        }
+      },
+      { crossOrigin: "anonymous" }
+    );
+
+    // // Save initial state for undo/redo
+    // const initialState = canvas.toJSON();
+    // setUndoStack([initialState]);
+    // setRedoStack([]);
+  }, [view, editor, canvasSize, designs, hatImages]);
+
+  // === CANVAS EVENT HANDLERS ===
+  useEffect(() => {
+    if (!editor?.canvas) return;
+
+    const canvas = editor.canvas;
+
+    const handleChange = () => {
+      if (isRestoringRef.current) return;
+      const currentState = saveDesignWithoutBoundary(canvas);
+      setUndoStack((prev) => [...prev, currentState]);
+      setRedoStack([]);
+    };
+
+    const handleWheel = (opt) => {
+      const delta = opt.e.deltaY;
+      let zoom = canvas.getZoom();
+      zoom *= 0.999 ** delta;
+
+      if (zoom > 3) zoom = 3;
+      if (zoom < 0.5) zoom = 0.5;
+
+      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+      setZoomLevel(zoom);
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+    };
+
+    canvas.on("object:added", handleChange);
+    canvas.on("object:modified", handleChange);
+    canvas.on("object:removed", handleChange);
+    canvas.on("mouse:wheel", handleWheel);
+
+    return () => {
+      canvas.off("object:added", handleChange);
+      canvas.off("object:modified", handleChange);
+      canvas.off("object:removed", handleChange);
+      canvas.off("mouse:wheel", handleWheel);
+    };
   }, [editor]);
 
-  // === FUNCTIONS: THÊM ELEMENTS ===
+  // === TEXT HANDLER ===
   const addText = () => {
     if (!editor?.canvas) return;
 
-    // Nếu ở view front và có boundary, đặt text trong boundary
     let textLeft, textTop;
     if (view === "front" && boundaryRef) {
       textLeft = boundaryRef.left + boundaryRef.width / 2;
@@ -166,14 +339,14 @@ export default function HatDesignPage() {
       textTop = canvasSize.height / 2;
     }
 
-    const text = new window.fabric.Text("Sample Text", {
+    const text = new window.fabric.Text("Nhập text", {
       left: textLeft,
       top: textTop,
       originX: "center",
       originY: "center",
+      fontFamily: "Arial",
       fontSize: 20,
       fill: "#000000",
-      fontFamily: "Arial",
     });
 
     // Nếu ở view front, giới hạn text trong boundary
@@ -187,17 +360,14 @@ export default function HatDesignPage() {
         const textWidth = text.getScaledWidth();
         const textHeight = text.getScaledHeight();
 
-        // Tính toán vị trí giới hạn
         const minLeft = boundLeft + textWidth / 2;
         const maxLeft = boundRight - textWidth / 2;
         const minTop = boundTop + textHeight / 2;
         const maxTop = boundBottom - textHeight / 2;
 
-        // Áp dụng giới hạn
         text.left = Math.max(minLeft, Math.min(maxLeft, text.left));
         text.top = Math.max(minTop, Math.min(maxTop, text.top));
 
-        // Cập nhật vị trí
         text.setCoords();
         editor.canvas.renderAll();
       };
@@ -209,42 +379,15 @@ export default function HatDesignPage() {
 
     editor.canvas.add(text);
     editor.canvas.setActiveObject(text);
-
-    // Đảm bảo text nằm trên mũ
     editor.canvas.bringToFront(text);
     if (boundaryRef) {
       editor.canvas.bringToFront(boundaryRef);
     }
-
     editor.canvas.renderAll();
   };
 
-  // === ZOOM FUNCTIONS ===
-  const handleZoomIn = () => {
-    if (!editor?.canvas) return;
-    const newZoom = Math.min(zoomLevel * 1.2, 3); // Giới hạn zoom max 3x
-    setZoomLevel(newZoom);
-    editor.canvas.setZoom(newZoom);
-    editor.canvas.renderAll();
-  };
-
-  const handleZoomOut = () => {
-    if (!editor?.canvas) return;
-    const newZoom = Math.max(zoomLevel / 1.2, 0.5); // Giới hạn zoom min 0.5x
-    setZoomLevel(newZoom);
-    editor.canvas.setZoom(newZoom);
-    editor.canvas.renderAll();
-  };
-
-  const handleResetZoom = () => {
-    if (!editor?.canvas) return;
-    setZoomLevel(1);
-    editor.canvas.setZoom(1);
-    editor.canvas.renderAll();
-  };
-
+  // === FILE HANDLERS (FROM OLD CODE) ===
   const handleFileInputChange = (e) => {
-    // CHỈ CHO PHÉP UPLOAD ẢNH KHI Ở VIEW "FRONT"
     if (view !== "front") {
       alert("Bạn chỉ có thể thêm ảnh ở mặt trước của mũ!");
       return;
@@ -259,14 +402,11 @@ export default function HatDesignPage() {
       reader.readAsDataURL(file);
     }
 
-    // Reset file input để có thể chọn lại cùng file
     e.target.value = "";
   };
 
   const handleFileDrop = (e) => {
     e.preventDefault();
-
-    // CHỈ CHO PHÉP DROP ẢNH KHI Ở VIEW "FRONT"
     if (view !== "front") {
       alert("Bạn chỉ có thể thêm ảnh ở mặt trước của mũ!");
       return;
@@ -301,7 +441,7 @@ export default function HatDesignPage() {
         lockUniScaling: false,
       });
 
-      // SỬA LỖI: Cải tiến logic giới hạn di chuyển ảnh trong boundary
+      // Logic giới hạn di chuyển ảnh trong boundary
       const enforceImageBoundary = () => {
         const boundLeft = boundaryRef.left;
         const boundTop = boundaryRef.top;
@@ -311,70 +451,120 @@ export default function HatDesignPage() {
         const imgWidth = img.getScaledWidth();
         const imgHeight = img.getScaledHeight();
 
-        // Tính toán vị trí giới hạn
         const minLeft = boundLeft + imgWidth / 2;
         const maxLeft = boundRight - imgWidth / 2;
         const minTop = boundTop + imgHeight / 2;
         const maxTop = boundBottom - imgHeight / 2;
 
-        // Áp dụng giới hạn
         img.left = Math.max(minLeft, Math.min(maxLeft, img.left));
         img.top = Math.max(minTop, Math.min(maxTop, img.top));
 
-        // Cập nhật vị trí
         img.setCoords();
         editor.canvas.renderAll();
       };
 
-      // Event listener cho việc di chuyển
       img.on("moving", enforceImageBoundary);
-
-      // Event listener cho việc scaling
       img.on("scaling", function () {
-        // Giới hạn kích thước không vượt quá boundary
         const maxScaleX = boundaryRef.width / img.width;
         const maxScaleY = boundaryRef.height / img.height;
-        const maxScale = Math.min(maxScaleX, maxScaleY);
 
-        if (img.scaleX > maxScale) {
-          img.set("scaleX", maxScale);
+        if (img.scaleX >= maxScaleX) {
+          img.set("scaleX", maxScaleX);
         }
-        if (img.scaleY > maxScale) {
-          img.set("scaleY", maxScale);
+        if (img.scaleY >= maxScaleY) {
+          img.set("scaleY", maxScaleY);
         }
 
-        // Sau khi scale, cũng cần kiểm tra vị trí
         enforceImageBoundary();
       });
-
-      // SỬA LỖI: Thêm event listener cho việc kết thúc di chuyển/scaling
       img.on("modified", enforceImageBoundary);
 
       editor.canvas.add(img);
       editor.canvas.setActiveObject(img);
-
-      // Đảm bảo ảnh được thêm nằm trên mũ nhưng dưới boundary
       editor.canvas.bringToFront(img);
       if (boundaryRef) {
         editor.canvas.bringToFront(boundaryRef);
       }
 
-      // Gọi hàm giới hạn ngay sau khi thêm để đảm bảo vị trí đúng
       enforceImageBoundary();
     });
   };
+  useEffect(() => {
+    if (!editor?.canvas) return;
 
-  // === UNDO/REDO FUNCTIONS ===
+    const handleSelection = () => {
+      const obj = editor.canvas.getActiveObject();
+      setSelectedObject(obj || null);
+    };
+
+    editor.canvas.on("selection:created", handleSelection);
+    editor.canvas.on("selection:updated", handleSelection);
+    editor.canvas.on("selection:cleared", handleSelection);
+
+    return () => {
+      editor.canvas.off("selection:created", handleSelection);
+      editor.canvas.off("selection:updated", handleSelection);
+      editor.canvas.off("selection:cleared", handleSelection);
+    };
+  }, [editor]);
+  // === COLOR HANDLER ===
+  const handleColorChange = (e) => {
+    const color = e.target.value;
+    if (!editor?.canvas) return;
+
+    const activeObject = editor.canvas.getActiveObject();
+    if (activeObject) {
+      if (activeObject.type === "text") {
+        activeObject.set("fill", color);
+      } else if (
+        activeObject.type === "rect" ||
+        activeObject.type === "circle"
+      ) {
+        activeObject.set("fill", color);
+      }
+      editor.canvas.renderAll();
+    } else if (boundaryRef) {
+      // Nếu không có object được chọn, đổi màu boundary
+      boundaryRef.set("fill", color + "80");
+      editor.canvas.renderAll();
+    }
+  };
+
+  // === ZOOM HANDLERS ===
+  const handleZoomIn = () => {
+    if (!editor?.canvas) return;
+    const newZoom = Math.min(zoomLevel * 1.2, 3);
+    setZoomLevel(newZoom);
+    editor.canvas.setZoom(newZoom);
+    editor.canvas.renderAll();
+  };
+
+  const handleZoomOut = () => {
+    if (!editor?.canvas) return;
+    const newZoom = Math.max(zoomLevel / 1.2, 0.5);
+    setZoomLevel(newZoom);
+    editor.canvas.setZoom(newZoom);
+    editor.canvas.renderAll();
+  };
+
+  const handleResetZoom = () => {
+    if (!editor?.canvas) return;
+    setZoomLevel(1);
+    editor.canvas.setZoom(1);
+    editor.canvas.renderAll();
+  };
+
+  // === UNDO/REDO HANDLERS ===
   const handleUndo = () => {
-    if (undoStack.length < 2 || !editor?.canvas) return;
+    if (!editor?.canvas || undoStack.length < 2) return;
 
+    isRestoringRef.current = true;
     const currentState = undoStack[undoStack.length - 1];
     const previousState = undoStack[undoStack.length - 2];
 
     setRedoStack((prev) => [...prev, currentState]);
     setUndoStack((prev) => prev.slice(0, -1));
 
-    isRestoringRef.current = true;
     editor.canvas.loadFromJSON(previousState, () => {
       editor.canvas.renderAll();
       isRestoringRef.current = false;
@@ -382,284 +572,182 @@ export default function HatDesignPage() {
   };
 
   const handleRedo = () => {
-    if (redoStack.length === 0 || !editor?.canvas) return;
-
-    const stateToRestore = redoStack[redoStack.length - 1];
-    setRedoStack((prev) => prev.slice(0, -1));
-    setUndoStack((prev) => [...prev, stateToRestore]);
+    if (!editor?.canvas || redoStack.length === 0) return;
 
     isRestoringRef.current = true;
+    const stateToRestore = redoStack[redoStack.length - 1];
+
+    setUndoStack((prev) => [...prev, stateToRestore]);
+    setRedoStack((prev) => prev.slice(0, -1));
+
     editor.canvas.loadFromJSON(stateToRestore, () => {
       editor.canvas.renderAll();
       isRestoringRef.current = false;
     });
   };
 
-  const handleColorChange = (e) => {
-    const color = e.target.value;
-    if (boundaryRef) {
-      boundaryRef.set("fill", color + "80");
-      editor.canvas.renderAll();
-    }
-  };
-
-  const handleSave = () => {
-    // Kiểm tra đăng nhập (ví dụ: kiểm tra token trong localStorage)
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Bạn cần đăng nhập để lưu thiết kế!");
-      navigate("/"); // hoặc navigate("/login") nếu bạn có route login riêng
-      return;
-    }
-    if (!editor?.canvas) return;
-
-    const dataURL = editor.canvas.toDataURL({
-      format: "png",
-      quality: 0.8,
-    });
-
-    const link = document.createElement("a");
-    link.download = `hat-design-${view}.png`;
-    link.href = dataURL;
-    link.click();
-
-    console.log("Design saved!");
-  };
-
+  // === VIEW CHANGE HANDLER ===
   const handleChangeView = (newView) => {
-    if (newView === view) return;
-
-    if (editor?.canvas) {
-      // SỬA: Lưu design mà không có boundary
+    if (editor?.canvas && view !== newView) {
       const currentDesign = saveDesignWithoutBoundary(editor.canvas);
-      setDesigns((prev) => ({
-        ...prev,
-        [view]: currentDesign,
-      }));
+      setDesigns((prev) => ({ ...prev, [view]: currentDesign }));
     }
-
     setView(newView);
   };
 
-  // === EFFECTS ===
-  useEffect(() => {
-    if (editor?.canvas) {
-      const initialState = saveDesignWithoutBoundary(editor.canvas);
-      setUndoStack([initialState]);
-      setRedoStack([]);
+  // === SAVE HANDLER ===
+  const handleSave = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("Bạn cần đăng nhập để lưu thiết kế!");
+      navigate("/login");
+      return;
     }
-  }, [editor]);
 
-  useEffect(() => {
-    if (!editor?.canvas) return;
+    if (!editor?.canvas) {
+      alert("Canvas chưa sẵn sàng!");
+      return;
+    }
 
-    const canvas = editor.canvas;
+    if (!productInfo) {
+      alert("Không có thông tin sản phẩm!");
+      return;
+    }
 
-    const handleChange = () => {
-      if (isRestoringRef.current) return;
+    try {
+      // Hiển thị loading
+      console.log("Đang lưu thiết kế...");
 
-      const currentState = saveDesignWithoutBoundary(canvas);
-      setUndoStack((prev) => [...prev, currentState]);
-      setRedoStack([]);
-    };
+      const dataURL = editor.canvas.toDataURL({
+        format: "png",
+        quality: 0.8,
+      });
 
-    // SỬA LỖI: Wheel zoom function
-    const handleWheel = (opt) => {
-      const delta = opt.e.deltaY;
-      let zoom = canvas.getZoom();
-      zoom *= 0.999 ** delta;
+      // Upload ảnh lên Cloudinary
+      console.log("Uploading to Cloudinary...");
+      const cloudinaryResult = await CloudinaryService.uploadBase64Image(
+        dataURL
+      );
 
-      // Giới hạn zoom
-      if (zoom > 3) zoom = 3;
-      if (zoom < 0.5) zoom = 0.5;
-
-      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-      setZoomLevel(zoom);
-      opt.e.preventDefault();
-      opt.e.stopPropagation();
-    };
-
-    canvas.on("object:added", handleChange);
-    canvas.on("object:modified", handleChange);
-    canvas.on("object:removed", handleChange);
-    canvas.on("mouse:wheel", handleWheel);
-
-    return () => {
-      canvas.off("object:added", handleChange);
-      canvas.off("object:modified", handleChange);
-      canvas.off("object:removed", handleChange);
-      canvas.off("mouse:wheel", handleWheel);
-    };
-  }, [editor]);
-
-  // === HELPER FUNCTION: REAPPLY BOUNDARY CONSTRAINTS ===
-  const reapplyBoundaryConstraints = (canvas, boundaryRef) => {
-    if (view !== "front" || !boundaryRef) return;
-
-    const objects = canvas.getObjects();
-    objects.forEach((obj) => {
-      // Chỉ áp dụng cho text và image (không phải hat image và boundary)
-      if ((obj.type === "text" || obj.type === "image") && obj.selectable) {
-        // Remove existing event listeners để tránh duplicate
-        obj.off("moving");
-        obj.off("scaling");
-        obj.off("modified");
-
-        // Tạo constraint function cho object này
-        const enforceObjectBoundary = () => {
-          const boundLeft = boundaryRef.left;
-          const boundTop = boundaryRef.top;
-          const boundRight = boundaryRef.left + boundaryRef.width;
-          const boundBottom = boundaryRef.top + boundaryRef.height;
-
-          const objWidth = obj.getScaledWidth();
-          const objHeight = obj.getScaledHeight();
-
-          // Tính toán vị trí giới hạn
-          const minLeft = boundLeft + objWidth / 2;
-          const maxLeft = boundRight - objWidth / 2;
-          const minTop = boundTop + objHeight / 2;
-          const maxTop = boundBottom - objHeight / 2;
-
-          // Áp dụng giới hạn
-          obj.left = Math.max(minLeft, Math.min(maxLeft, obj.left));
-          obj.top = Math.max(minTop, Math.min(maxTop, obj.top));
-
-          // Cập nhật vị trí
-          obj.setCoords();
-          canvas.renderAll();
-        };
-
-        // Apply constraints cho scaling (chỉ với image)
-        if (obj.type === "image") {
-          const enforceScalingBoundary = () => {
-            const maxScaleX = boundaryRef.width / obj.width;
-            const maxScaleY = boundaryRef.height / obj.height;
-            const maxScale = Math.min(maxScaleX, maxScaleY);
-
-            if (obj.scaleX > maxScale) {
-              obj.set("scaleX", maxScale);
-            }
-            if (obj.scaleY > maxScale) {
-              obj.set("scaleY", maxScale);
-            }
-
-            enforceObjectBoundary();
-          };
-
-          obj.on("scaling", enforceScalingBoundary);
-        }
-
-        // Apply event listeners
-        obj.on("moving", enforceObjectBoundary);
-        obj.on("modified", enforceObjectBoundary);
-
-        // Apply constraint ngay lập tức
-        enforceObjectBoundary();
+      if (!cloudinaryResult.success) {
+        alert(`Lỗi upload ảnh: ${cloudinaryResult.error}`);
+        return;
       }
-    });
+
+      console.log("Cloudinary upload success:", cloudinaryResult.url);
+
+      const userInfoRes = await fetch(
+        "http://54.169.159.141:3000/auth/user/get/loginUser",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const userInfo = await userInfoRes.json();
+
+      if (!userInfo.success) {
+        alert("Không thể lấy thông tin người dùng!");
+        return;
+      }
+
+      let mainText = "";
+      const objects = editor.canvas.getObjects();
+      const textObj = objects.find((obj) => obj.type === "text");
+      if (textObj) {
+        mainText = textObj.text;
+      }
+
+      const res = await fetch("http://54.169.159.141:3000/customDesign/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          design_name: `${
+            productInfo.name
+          } - ${new Date().toLocaleDateString()}`,
+          color: "White",
+          text: mainText || "Custom Design",
+          image_url: cloudinaryResult.url, // Sử dụng URL từ Cloudinary
+          cloudinary_public_id: cloudinaryResult.public_id, // Lưu public_id để có thể xóa sau này
+          status: true,
+          user_id: userInfo.data._id,
+          base_product_id: productInfo._id,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert("Lưu thiết kế thành công!");
+      } else {
+        alert(data.message || "Lưu thiết kế thất bại!");
+      }
+    } catch (error) {
+      console.error("Error saving design:", error);
+      alert("Có lỗi xảy ra khi lưu thiết kế!");
+    }
   };
 
-  // === LOAD VIEW EFFECT ===
+  // === RESIZE HANDLER ===
   useEffect(() => {
-    if (!editor?.canvas) return;
+    const handleResize = () => {
+      const newWidth = window.innerWidth - SIDEBAR_WIDTH;
+      const newHeight = window.innerHeight - HEADER_HEIGHT;
 
-    const canvas = editor.canvas;
-    console.log("Loading image for view:", view);
-    console.log("Canvas size:", canvasSize.width, "x", canvasSize.height);
+      setCanvasSize({
+        width: newWidth,
+        height: newHeight,
+      });
 
-    // QUAN TRỌNG: Clear canvas và cleanup boundary trước
-    canvas.clear();
-    cleanupBoundary(canvas);
+      if (editor?.canvas) {
+        editor.canvas.setWidth(newWidth);
+        editor.canvas.setHeight(newHeight);
+        editor.canvas.renderAll();
+      }
+    };
 
-    // Reset zoom khi chuyển view
-    setZoomLevel(1);
-    canvas.setZoom(1);
-    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    window.addEventListener("resize", handleResize);
+    handleResize();
 
-    // Đảm bảo canvas có kích thước theo màn hình
-    canvas.setWidth(canvasSize.width);
-    canvas.setHeight(canvasSize.height);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [editor]);
 
-    // Load ảnh mũ
-    window.fabric.Image.fromURL(
-      hatImages[view],
-      (hatImg) => {
-        console.log("Image loaded successfully:", hatImg);
-        console.log("Original image size:", hatImg.width, "x", hatImg.height);
-
-        // Tính scale để ảnh chiếm 40% canvas
-        const targetWidth = canvasSize.width * 0.4;
-        const targetHeight = canvasSize.height * 0.4;
-
-        const scaleX = targetWidth / hatImg.width;
-        const scaleY = targetHeight / hatImg.height;
-        const scale = Math.min(scaleX, scaleY);
-
-        console.log("Scale applied:", scale);
-
-        // Tính toán vị trí chính xác của ảnh mũ
-        const hatWidth = hatImg.width * scale;
-        const hatHeight = hatImg.height * scale;
-        const hatLeft = canvasSize.width / 2 - hatWidth / 2;
-        const hatTop = canvasSize.height / 2 - hatHeight / 2;
-
-        hatImg.set({
-          scaleX: scale,
-          scaleY: scale,
-          left: hatLeft,
-          top: hatTop,
-          selectable: false,
-          evented: false,
-        });
-
-        canvas.add(hatImg);
-        canvas.sendToBack(hatImg);
-
-        // CHỈ TẠO BOUNDARY KHI Ở VIEW "FRONT"
-        let currentBoundary = null;
-        if (view === "front") {
-          currentBoundary = createBoundary(canvas, hatImg);
-        }
-
-        // Load thiết kế cũ nếu có
-        if (designs[view]) {
-          canvas.loadFromJSON(designs[view], () => {
-            // QUAN TRỌNG: Cleanup boundary sau khi load
-            cleanupBoundary(canvas);
-
-            // Recreate boundary cho front view
-            if (view === "front") {
-              const hatImgAfterLoad = canvas
-                .getObjects()
-                .find((obj) => obj.type === "image" && !obj.selectable);
-              if (hatImgAfterLoad) {
-                currentBoundary = createBoundary(canvas, hatImgAfterLoad);
-
-                // SỬA LỖI: Truyền boundary trực tiếp vào hàm
-                setTimeout(() => {
-                  reapplyBoundaryConstraints(canvas, currentBoundary);
-                }, 150); // Tăng timeout để đảm bảo boundary đã được tạo
-              }
-            }
-
-            canvas.renderAll();
-          });
-        } else {
-          // Nếu không có design cũ và đang ở front view, vẫn cần apply constraints
-          if (view === "front" && currentBoundary) {
-            setTimeout(() => {
-              reapplyBoundaryConstraints(canvas, currentBoundary);
-            }, 150);
-          }
-          canvas.renderAll();
-        }
-      },
-      { crossOrigin: "anonymous" }
+  if (loading || !productInfo) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Đang tải thông tin sản phẩm...</Typography>
+      </Box>
     );
-  }, [view, editor, canvasSize, designs]);
+  }
+  const getViewLabel = (view) => {
+    switch (view) {
+      case "front":
+        return "Mặt trước";
+      case "back":
+        return "Mặt sau";
+      case "left":
+        return "Mặt trái";
+      case "right":
+        return "Mặt phải";
+      default:
+        return "";
+    }
+  };
 
-  // === RENDER ===
+  // Kiểm tra nếu không có ảnh cho mặt hiện tại
+  const noImageForCurrentView = !hatImages[view];
   return (
     <Box
       sx={{
@@ -674,6 +762,7 @@ export default function HatDesignPage() {
         display="flex"
         gap={1}
         justifyContent="center"
+        alignItems="center"
         p={2}
         sx={{
           height: HEADER_HEIGHT,
@@ -682,6 +771,10 @@ export default function HatDesignPage() {
           flexShrink: 0,
         }}
       >
+        <Typography variant="h6" sx={{ mr: 2, color: "#666" }}>
+          Thiết kế: {productInfo.name}
+        </Typography>
+
         <Button
           size="medium"
           variant={view === "front" ? "contained" : "outlined"}
@@ -779,7 +872,6 @@ export default function HatDesignPage() {
             </label>
           </Tooltip>
 
-          {/* THÊM CÁC NÚT ZOOM */}
           <Tooltip title="Phóng to" placement="right">
             <IconButton onClick={handleZoomIn} size="large">
               <ZoomIn />
@@ -849,15 +941,38 @@ export default function HatDesignPage() {
           onDrop={handleFileDrop}
           onDragOver={(e) => e.preventDefault()}
         >
-          <FabricJSCanvas
-            className="sample-canvas"
-            onReady={onReady}
-            style={{
-              width: "100%",
-              height: "100%",
-              backgroundColor: "#fff",
-            }}
-          />
+          {" "}
+          {noImageForCurrentView ? (
+            // Hiển thị thông báo khi không có ảnh
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                height: "100%",
+                backgroundColor: "#fff",
+              }}
+            >
+              <Typography variant="h5" fontWeight="bold" color="primary" mb={2}>
+                {getViewLabel(view)}
+              </Typography>
+              <Typography variant="h6" color="text.secondary">
+                Hệ thống chưa cập nhật ảnh
+              </Typography>
+            </Box>
+          ) : (
+            <FabricJSCanvas
+              className="sample-canvas"
+              onReady={onReady}
+              style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: "#fff",
+              }}
+            />
+          )}
         </Box>
       </Box>
     </Box>
