@@ -42,35 +42,19 @@ const LoginPage = () => {
         }),
       });
 
-      const userData = await userRes.json();
-      if (userRes.ok && userData.accessToken) {
-        // Lưu accessToken vào localStorage
-        localStorage.setItem("accessToken", userData.accessToken);
+      const infoData = await infoRes.json();
 
-        // Gọi API lấy thông tin user
-        const infoRes = await fetch(
-          "http://54.169.159.141:3000/auth/user/get/loginUser",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${userData.accessToken}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        const infoData = await infoRes.json();
+      if (infoRes.ok && infoData.success && infoData.data) {
+        const role = infoData.data.role;
+          localStorage.setItem("user", JSON.stringify(infoData.data));
+        setUser(infoData.data);
+        if (role === "customer") {
+          navigate("/");
+        } else if (role === "manager") {
+          navigate("/manager");
+        } else if (role === "admin") {
+          navigate("/admin");
 
-        if (infoRes.ok && infoData.success && infoData.data) {
-          const role = infoData.data.role;
-          if (role === "customer") {
-            navigate("/");
-          } else if (role === "manager") {
-            navigate("/manager");
-          } else if (role === "admin") {
-            navigate("/admin");
-          } else {
-            alert("Role không hợp lệ!");
-          }
         } else {
           alert(infoData.message || "Không lấy được thông tin người dùng!");
         }

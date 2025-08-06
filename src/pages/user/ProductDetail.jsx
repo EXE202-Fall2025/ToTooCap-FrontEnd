@@ -19,16 +19,21 @@ import CircleIcon from "@mui/icons-material/Circle";
 import Rating from "@mui/material/Rating";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
-
+import { toast } from "react-toastify";
 export default function ProductDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const handleAddToCart = () => {
-    console.log("Product added to cart");
-  };
+  
+const handleAddToCart = (product) => {
+  const stored = localStorage.getItem("myProducts");
+  const myProducts = stored ? JSON.parse(stored) : [];
+  // Thêm sản phẩm mới vào đầu danh sách
+  localStorage.setItem("myProducts", JSON.stringify([product, ...myProducts]));
+  toast.success("Product added to cart successfully!"); 
+};
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -120,7 +125,7 @@ export default function ProductDetail() {
                 variant="contained"
                 size="large"
                 fullWidth
-                onClick={handleAddToCart}
+                 onClick={() => handleAddToCart(product)}
                 sx={{
                   backgroundColor: "#3b82f6",
                   color: "#fff",

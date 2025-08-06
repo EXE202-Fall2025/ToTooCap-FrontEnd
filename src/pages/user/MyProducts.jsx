@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -20,15 +20,15 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import ShareIcon from '@mui/icons-material/Share';
 import Sidebar from '../../components/Sidebar';
-const mockProducts = Array(6).fill({
-  name: 'Product Name',
-  description: 'Description',
-  size: 'Size',
-  status: 'Status',
-  inventory: 'In Stock',
-});
+
 
 export default function MyProducts() {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("myProducts");
+    setProducts(stored ? JSON.parse(stored) : []);
+  }, []);
   return (
    <Box sx={{ display: 'flex' }}>
   <Sidebar />
@@ -91,7 +91,7 @@ export default function MyProducts() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {mockProducts.map((product, index) => (
+           {products.map((product, index) => (
             <TableRow key={index}>
               <TableCell padding="checkbox">
                 <Checkbox />

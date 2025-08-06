@@ -1,18 +1,17 @@
-// Product API Service
+// Category API Service
 const API_BASE_URL = "http://54.169.159.141:3000"; // API URL từ yêu cầu
 
-class ProductService {
-  // Lấy danh sách tất cả sản phẩm
-  static async getAllProducts(page = 1, limit = 10) {
+class CategoryService {
+  // Lấy danh sách tất cả danh mục
+  static async getAllCategories(page = 1, limit = 10) {
     try {
-      const token = localStorage.getItem("token"); // Lấy token từ localStorage nếu cần
       const response = await fetch(
-        `${API_BASE_URL}/product/get?page=${page}&limit=${limit}`,
+        `${API_BASE_URL}/category/get?page=${page}&limit=${limit}`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            // 'Authorization': `Bearer ${token}`
           },
         }
       );
@@ -24,23 +23,24 @@ class ProductService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("Error fetching categories:", error);
       throw error;
     }
   }
 
-  // Thêm sản phẩm mới
-  static async addProduct(productData) {
+  // Lấy chi tiết danh mục theo ID
+  static async getCategoryById(categoryId) {
     try {
-      const token = localStorage.getItem("token"); // Lấy token từ localStorage nếu cần
-      const response = await fetch(`${API_BASE_URL}/product/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(productData),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/category/get/${categoryId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            // 'Authorization': `Bearer ${token}`
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -49,20 +49,21 @@ class ProductService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error adding product:", error);
+      console.error("Error fetching category details:", error);
       throw error;
     }
   }
 
-  // Lấy chi tiết sản phẩm theo ID
-  static async getProductById(productId) {
+  // Thêm danh mục mới
+  static async addCategory(categoryData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/product/get/${productId}`, {
-        method: "GET",
+      const response = await fetch(`${API_BASE_URL}/category/add`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           // 'Authorization': `Bearer ${token}`
         },
+        body: JSON.stringify(categoryData),
       });
 
       if (!response.ok) {
@@ -72,24 +73,23 @@ class ProductService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error fetching product details:", error);
+      console.error("Error adding category:", error);
       throw error;
     }
   }
 
-  // Cập nhật sản phẩm (sẽ implement sau)
-  static async updateProduct(productId, productData) {
+  // Cập nhật danh mục
+  static async updateCategory(categoryId, categoryData) {
     try {
-      const token = localStorage.getItem("token"); // Lấy token từ localStorage nếu cần
       const response = await fetch(
-        `${API_BASE_URL}/product/update/${productId}`,
+        `${API_BASE_URL}/category/update/${categoryId}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            // 'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(productData),
+          body: JSON.stringify(categoryData),
         }
       );
 
@@ -100,22 +100,21 @@ class ProductService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error updating product:", error);
+      console.error("Error updating category:", error);
       throw error;
     }
   }
 
-  // Xóa sản phẩm (sẽ implement sau)
-  static async deleteProduct(productId) {
+  // Xóa danh mục
+  static async deleteCategory(categoryId) {
     try {
-      const token = localStorage.getItem("token"); // Lấy token từ localStorage nếu cần
       const response = await fetch(
-        `${API_BASE_URL}/product/delete/${productId}`,
+        `${API_BASE_URL}/category/delete/${categoryId}`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            // 'Authorization': `Bearer ${token}`
           },
         }
       );
@@ -127,15 +126,15 @@ class ProductService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error deleting product:", error);
+      console.error("Error deleting category:", error);
       throw error;
     }
   }
 
-  // Lấy thống kê sản phẩm
-  static async getProductStats() {
+  // Lấy thống kê danh mục
+  static async getCategoryStats() {
     try {
-      const response = await fetch(`${API_BASE_URL}/product/stats`, {
+      const response = await fetch(`${API_BASE_URL}/category/stats`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -150,10 +149,10 @@ class ProductService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error fetching product stats:", error);
+      console.error("Error fetching category stats:", error);
       throw error;
     }
   }
 }
 
-export default ProductService;
+export default CategoryService;

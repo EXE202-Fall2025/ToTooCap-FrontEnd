@@ -19,7 +19,8 @@ import PaymentPage from "../pages/user/PaymentPage";
 import ChooseProductPage from "../pages/user/Design/ChooseProductPage";
 import ProductDesignDetail from "../pages/user/Design/ProductDesignDetail";
 import HatDesignPage from "../pages/user/Design/HatDesignPage";
-
+import CategoryManagement from "../pages/admin/CategoryManagement";
+import RevenueReport from "../pages/admin/RevenueReport";
 // Import admin layout
 import AdminLayout from "../components/admin/AdminLayout";
 
@@ -45,94 +46,18 @@ const MainRoute = () => {
         <Route path="/hat-design/:productId" element={<HatDesignPage />} />
 
         {/* Admin Routes with AdminLayout */}
-        <Route
-          path="/admin"
-          element={
-            <AdminLayout>
-              <AdminPage />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <AdminLayout>
-              <UserManagement />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/orders"
-          element={
-            <AdminLayout>
-              <OrderManagement />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/products"
-          element={
-            <AdminLayout>
-              <ProductManagement />
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/categories"
-          element={
-            <AdminLayout>
-              <div>Quản lý danh mục - Coming soon</div>
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/reports"
-          element={
-            <AdminLayout>
-              <div>Báo cáo doanh thu - Coming soon</div>
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/analytics"
-          element={
-            <AdminLayout>
-              <div>Thống kê - Coming soon</div>
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/settings/*"
-          element={
-            <AdminLayout>
-              <div>Cài đặt hệ thống - Coming soon</div>
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/notifications"
-          element={
-            <AdminLayout>
-              <div>Thông báo - Coming soon</div>
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/security"
-          element={
-            <AdminLayout>
-              <div>Bảo mật - Coming soon</div>
-            </AdminLayout>
-          }
-        />
-        <Route
-          path="/admin/support/*"
-          element={
-            <AdminLayout>
-              <div>Hỗ trợ - Coming soon</div>
-            </AdminLayout>
-          }
-        />
+
+        <Route path="/admin" element={<AdminLayout><AdminPage /></AdminLayout>} />
+        <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
+        <Route path="/admin/orders" element={<AdminLayout><OrderManagement /></AdminLayout>} />
+        <Route path="/admin/products" element={<AdminLayout><ProductManagement /></AdminLayout>} />
+        <Route path="/admin/categories" element={<AdminLayout><CategoryManagement /></AdminLayout>} />
+        <Route path="/admin/reports" element={<AdminLayout><RevenueReport /></AdminLayout>} />
+        <Route path="/admin/analytics" element={<AdminLayout><div>Thống kê - Coming soon</div></AdminLayout>} />
+        <Route path="/admin/settings/*" element={<AdminLayout><div>Cài đặt hệ thống - Coming soon</div></AdminLayout>} />
+        <Route path="/admin/notifications" element={<AdminLayout><div>Thông báo - Coming soon</div></AdminLayout>} />
+        <Route path="/admin/security" element={<AdminLayout><div>Bảo mật - Coming soon</div></AdminLayout>} />
+        <Route path="/admin/support/*" element={<AdminLayout><div>Hỗ trợ - Coming soon</div></AdminLayout>} />
 
         {/* Routes accessible by manager */}
         <Route path="/manager" element={<ManagerPage />} />
