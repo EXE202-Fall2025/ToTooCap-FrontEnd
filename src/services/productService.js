@@ -31,7 +31,7 @@ class ProductService {
   // Lấy chi tiết sản phẩm theo ID
   static async getProductById(productId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/product/${productId}`, {
+      const response = await fetch(`${API_BASE_URL}/product/get/${productId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
