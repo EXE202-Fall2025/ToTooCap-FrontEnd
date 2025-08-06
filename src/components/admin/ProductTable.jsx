@@ -29,8 +29,7 @@ import {
   Alert,
   Snackbar,
   Card,
-  CardMedia,
-  CardContent
+  CardMedia
 } from '@mui/material';
 import {
   MoreVert,
@@ -77,7 +76,15 @@ const ProductTable = () => {
   const [dialogType, setDialogType] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [productDetails, setProductDetails] = useState(null);
-  
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    stock_quantity: '',
+    image_url: '',
+    category_id: '60d5ec49f8c1b92c8c8e1d23' // Default category ID
+  });
+
   // API pagination
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -180,7 +187,28 @@ const ProductTable = () => {
     handleMenuClose();
   };
 
+  const handleAdd = () => {
+    setFormData({
+      name: '',
+      description: '',
+      price: '',
+      stock_quantity: '',
+      image_url: '',
+      category_id: '60d5ec49f8c1b92c8c8e1d23'
+    });
+    setDialogType('add');
+    setOpenDialog(true);
+  };
+
   const handleEdit = () => {
+    setFormData({
+      name: selectedProduct?.name || '',
+      description: selectedProduct?.description || '',
+      price: selectedProduct?.price || '',
+      stock_quantity: selectedProduct?.stock_quantity || '',
+      image_url: selectedProduct?.image_url || '',
+      category_id: selectedProduct?.category_id || '60d5ec49f8c1b92c8c8e1d23'
+    });
     setDialogType('edit');
     setOpenDialog(true);
     handleMenuClose();
@@ -190,6 +218,93 @@ const ProductTable = () => {
     setDialogType('delete');
     setOpenDialog(true);
     handleMenuClose();
+  };
+
+  const handleSubmit = async () => {
+    try {
+      // Validate form data
+      if (!formData.name || !formData.price || !formData.stock_quantity) {
+        setSnackbar({
+          open: true,
+          message: 'Vui lòng điền đầy đủ thông tin bắt buộc.',
+          severity: 'error'
+        });
+        return;
+      }
+
+      const productData = {
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        stock_quantity: parseInt(formData.stock_quantity),
+        image_url: formData.image_url,
+        category_id: formData.category_id
+      };
+
+      if (dialogType === 'add') {
+        const response = await ProductService.addProduct(productData);
+        if (response.success) {
+          setSnackbar({
+            open: true,
+            message: 'Thêm sản phẩm thành công!',
+            severity: 'success'
+          });
+          setOpenDialog(false);
+          loadProducts(); // Reload data
+        } else {
+          throw new Error(response.message || 'Failed to add product');
+        }
+      } else if (dialogType === 'edit') {
+        const response = await ProductService.updateProduct(selectedProduct._id, productData);
+        if (response.success) {
+          setSnackbar({
+            open: true,
+            message: 'Cập nhật sản phẩm thành công!',
+            severity: 'success'
+          });
+          setOpenDialog(false);
+          loadProducts(); // Reload data
+        } else {
+          throw new Error(response.message || 'Failed to update product');
+        }
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: `Không thể ${dialogType === 'add' ? 'thêm' : 'cập nhật'} sản phẩm. ${err.message}`,
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const response = await ProductService.deleteProduct(selectedProduct._id);
+      if (response.success) {
+        setSnackbar({
+          open: true,
+          message: 'Xóa sản phẩm thành công!',
+          severity: 'success'
+        });
+        setOpenDialog(false);
+        loadProducts(); // Reload data
+      } else {
+        throw new Error(response.message || 'Failed to delete product');
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: `Không thể xóa sản phẩm. ${err.message}`,
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleFormChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const handleChangePage = (event, newPage) => {
@@ -268,6 +383,7 @@ const ProductTable = () => {
           <Button
             variant="contained"
             startIcon={<Add />}
+            onClick={handleAdd}
             sx={{ textTransform: 'none' }}
           >
             Thêm sản phẩm
@@ -499,7 +615,7 @@ const ProductTable = () => {
         </MenuItem>
       </Menu>
 
-      {/* Dialog for View Details/Delete */}
+      {/* Dialog for Add/Edit/View/Delete */}
       <Dialog 
         open={openDialog} 
         onClose={() => setOpenDialog(false)} 
@@ -507,9 +623,10 @@ const ProductTable = () => {
         fullWidth
       >
         <DialogTitle sx={{ fontWeight: 600 }}>
+          {dialogType === 'add' && 'Thêm sản phẩm mới'}
+          {dialogType === 'edit' && 'Chỉnh sửa sản phẩm'}
           {dialogType === 'view' && `Chi tiết sản phẩm: ${selectedProduct?.name}`}
           {dialogType === 'delete' && 'Xác nhận xóa sản phẩm'}
-          {dialogType === 'edit' && 'Chỉnh sửa sản phẩm'}
         </DialogTitle>
         <DialogContent>
           {dialogType === 'delete' ? (
@@ -570,30 +687,119 @@ const ProductTable = () => {
               )}
             </Box>
           ) : (
-            <Typography sx={{ py: 2 }}>
-              Chức năng chỉnh sửa sẽ được thêm sau.
-            </Typography>
+            // Add/Edit Form
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+              <TextField
+                label="Tên sản phẩm *"
+                fullWidth
+                value={formData.name}
+                onChange={(e) => handleFormChange('name', e.target.value)}
+                variant="outlined"
+                required
+              />
+              <TextField
+                label="Mô tả"
+                fullWidth
+                multiline
+                rows={3}
+                value={formData.description}
+                onChange={(e) => handleFormChange('description', e.target.value)}
+                variant="outlined"
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField
+                  label="Giá *"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => handleFormChange('price', e.target.value)}
+                  variant="outlined"
+                  required
+                  sx={{ flex: 1 }}
+                  InputProps={{
+                    inputProps: { min: 0, step: 0.01 }
+                  }}
+                />
+                <TextField
+                  label="Số lượng tồn kho *"
+                  type="number"
+                  value={formData.stock_quantity}
+                  onChange={(e) => handleFormChange('stock_quantity', e.target.value)}
+                  variant="outlined"
+                  required
+                  sx={{ flex: 1 }}
+                  InputProps={{
+                    inputProps: { min: 0, step: 1 }
+                  }}
+                />
+              </Box>
+              <TextField
+                label="URL hình ảnh"
+                fullWidth
+                value={formData.image_url}
+                onChange={(e) => handleFormChange('image_url', e.target.value)}
+                variant="outlined"
+                placeholder="https://example.com/image.jpg"
+              />
+              <TextField
+                label="Category ID"
+                fullWidth
+                value={formData.category_id}
+                onChange={(e) => handleFormChange('category_id', e.target.value)}
+                variant="outlined"
+                helperText="ID của danh mục sản phẩm"
+              />
+              
+              {/* Image Preview */}
+              {formData.image_url && (
+                <Box>
+                  <Typography variant="body2" gutterBottom>Xem trước hình ảnh:</Typography>
+                  <Card sx={{ maxWidth: 200 }}>
+                    <CardMedia
+                      component="img"
+                      height="120"
+                      image={formData.image_url}
+                      alt="Preview"
+                      sx={{ objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </Card>
+                </Box>
+              )}
+            </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={() => setOpenDialog(false)} sx={{ textTransform: 'none' }}>
             {dialogType === 'view' ? 'Đóng' : 'Hủy'}
           </Button>
-          {dialogType === 'delete' && (
+          {dialogType === 'add' && (
             <Button 
               variant="contained" 
-              color="error"
+              onClick={handleSubmit}
               sx={{ textTransform: 'none' }}
             >
-              Xóa
+              Thêm sản phẩm
             </Button>
           )}
           {dialogType === 'edit' && (
             <Button 
               variant="contained" 
+              onClick={handleSubmit}
               sx={{ textTransform: 'none' }}
             >
               Cập nhật
+            </Button>
+          )}
+          {dialogType === 'delete' && (
+            <Button 
+              variant="contained" 
+              color="error"
+              onClick={handleDeleteConfirm}
+              sx={{ textTransform: 'none' }}
+            >
+              Xóa
             </Button>
           )}
         </DialogActions>

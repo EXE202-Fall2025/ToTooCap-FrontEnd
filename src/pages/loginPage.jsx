@@ -59,8 +59,10 @@ const LoginPage = () => {
 
       if (infoRes.ok && infoData.success && infoData.data) {
         const role = infoData.data.role;
+          localStorage.setItem("user", JSON.stringify(infoData.data));
+        setUser(infoData.data);
         if (role === "customer") {
-          navigate("/home");
+          navigate("/");
         } else if (role === "manager") {
           navigate("/manager");
         } else if (role === "admin") {

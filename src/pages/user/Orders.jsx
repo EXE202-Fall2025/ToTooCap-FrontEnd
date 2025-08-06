@@ -22,9 +22,10 @@ const statusFilters = ["All", "Processing", "Completed", "Cancelled"];
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("All");
-  const [userId, setUserId] = useState("");
   const [productNames, setProductNames] = useState({}); // Map prouct_id -> productName
   const [productInfo, setProductInfo] = useState({}); // Map product_id -> product object
+  const storedUser = localStorage.getItem("user");
+  const userId = storedUser ? JSON.parse(storedUser)._id : "";
 
   useEffect(() => {
     fetchOrders();
@@ -44,10 +45,11 @@ export default function Orders() {
       }
 
       const response = await fetch(
-        `http://54.169.159.141:3000/order/orderItem/get?${params.toString()}`
+        `http://54.169.159.141:3000/order/get?${params.toString()}`
       );
       const data = await response.json();
-      console.log("Fetched orders:", data);
+      console.log("Fetched order items:", data);
+
       if (data.success) {
         const orderItems = data.data;
         setOrders(orderItems);
@@ -103,13 +105,7 @@ export default function Orders() {
             variant="standard"
             fullWidth
           />
-          <TextField
-            label="User ID"
-            variant="outlined"
-            size="small"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-          />
+         
         </Box>
 
         {/* Status filters */}

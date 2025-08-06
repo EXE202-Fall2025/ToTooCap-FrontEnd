@@ -107,18 +107,37 @@ const OrderTable = () => {
   }, []);
 
   const loadOrders = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const orderData = await OrderService.getAllOrders();
-      setOrders(orderData);
-    } catch (err) {
-      setError('Không thể tải danh sách đơn hàng. Vui lòng thử lại.');
-      console.error('Error loading orders:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    setError(null);
+    const orderData = await OrderService.getAllOrders();
+    // Map lại dữ liệu cho đúng format UI
+    const mappedOrders = Array.isArray(orderData.data)
+      ? orderData.data.map(order => ({
+          _id: order._id,
+          orderNumber: order._id, // hoặc tạo số đơn hàng riêng nếu có
+          customerName: order.customerName || 'Khách hàng',
+          customerEmail: order.customerEmail || '',
+          productName: order.productName || '', // hoặc lấy từ items nếu có
+          items: order.items || [],
+          quantity: order.quantity || 1,
+          totalAmount: order.total_amount,
+          status: order.status,
+          paymentMethod: order.payment_method,
+          createdAt: order.createdAt || order.order_date,
+          expectedDelivery: order.expectedDelivery || '',
+          deliveryDate: order.deliveryDate || '',
+          shippingAddress: order.shipping_address,
+        }))
+      : [];
+    setOrders(mappedOrders);
+  } catch (err) {
+    setError('Không thể tải danh sách đơn hàng. Vui lòng thử lại.');
+    console.error('Error loading orders:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Filter orders based on search and filters
   const filteredOrders = orders.filter(order => {
@@ -379,7 +398,7 @@ const OrderTable = () => {
               {filteredOrders
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((order) => (
-                <TableRow key={order.id} hover sx={{ '&:hover': { backgroundColor: '#f8f9fa' } }}>
+                <TableRow key={order._id} hover sx={{ '&:hover': { backgroundColor: '#f8f9fa' } }}>
                   <TableCell>
                     <Box>
                       <Typography variant="body2" fontWeight="600" sx={{ color: '#333' }}>

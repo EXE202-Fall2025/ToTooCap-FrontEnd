@@ -1,15 +1,16 @@
 // Order API Service
-const API_BASE_URL = "http://localhost:8080/api"; // Thay đổi URL này theo backend của bạn
+const API_BASE_URL = "http://54.169.159.141:3000";
 
 class OrderService {
   // Lấy danh sách tất cả đơn hàng
   static async getAllOrders() {
+    const token = localStorage.getItem("token");
     try {
-      const response = await fetch(`${API_BASE_URL}/orders/getAll`, {
+      const response = await fetch(`${API_BASE_URL}/order/get`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          // 'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -18,6 +19,8 @@ class OrderService {
       }
 
       const data = await response.json();
+      console.log("Orders fetched successfully:", data);
+
       return data;
     } catch (error) {
       console.error("Error fetching orders:", error);
