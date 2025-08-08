@@ -23,6 +23,8 @@ import CategoryManagement from "../pages/admin/CategoryManagement";
 import RevenueReport from "../pages/admin/RevenueReport";
 // Import admin layout
 import AdminLayout from "../components/admin/AdminLayout";
+import ImagesManagement from "../pages/admin/ImagesManagement";
+import CheckoutPage from "../pages/user/CheckoutPage";
 
 const MainRoute = () => {
   return (
@@ -44,6 +46,7 @@ const MainRoute = () => {
         <Route path="/choose-product" element={<ChooseProductPage />} />
         <Route path="/product-design/:id" element={<ProductDesignDetail />} />
         <Route path="/hat-design/:productId" element={<HatDesignPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
 
         {/* Admin Routes with AdminLayout */}
 
@@ -53,6 +56,7 @@ const MainRoute = () => {
         <Route path="/admin/products" element={<AdminLayout><ProductManagement /></AdminLayout>} />
         <Route path="/admin/categories" element={<AdminLayout><CategoryManagement /></AdminLayout>} />
         <Route path="/admin/reports" element={<AdminLayout><RevenueReport /></AdminLayout>} />
+        <Route path="/admin/images" element={<AdminLayout><ImagesManagement /></AdminLayout>} />
         <Route path="/admin/analytics" element={<AdminLayout><div>Thống kê - Coming soon</div></AdminLayout>} />
         <Route path="/admin/settings/*" element={<AdminLayout><div>Cài đặt hệ thống - Coming soon</div></AdminLayout>} />
         <Route path="/admin/notifications" element={<AdminLayout><div>Thông báo - Coming soon</div></AdminLayout>} />

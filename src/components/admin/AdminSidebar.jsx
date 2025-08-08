@@ -30,7 +30,8 @@ import {
   LocalShipping,
   Payment,
   Notifications,
-  Security
+  Security,
+  Image,
 } from "@mui/icons-material";
 
 const drawerWidth = 280;
@@ -74,6 +75,11 @@ const AdminSidebar = () => {
           text: "Quản lý danh mục",
           icon: <Category />,
           path: "/admin/categories"
+        },
+        {
+          text: "Quản lý ảnh sản phẩm",
+          icon: <Image />,
+          path: "/admin/images"
         }
       ]
     },
