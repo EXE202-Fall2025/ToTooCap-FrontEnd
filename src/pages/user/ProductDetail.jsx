@@ -26,14 +26,35 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
-const handleAddToCart = (product) => {
-  const stored = localStorage.getItem("myProducts");
-  const myProducts = stored ? JSON.parse(stored) : [];
-  // Thêm sản phẩm mới vào đầu danh sách
-  localStorage.setItem("myProducts", JSON.stringify([product, ...myProducts]));
-  toast.success("Product added to cart successfully!"); 
-};
+  // Call API to add to cart instead of localStorage
+  const handleAddToCart = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch(
+        "http://54.169.159.141:3000/cart/CartItem/product/add",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ quantity: 1, product_id: id }),
+        }
+      );
+      const data = await res.json();
+      if (res.ok && (data.success === undefined || data.success === true)) {
+        // Lưu cart_id trả về
+        const cartId = data?.data?.cart_id || data?.cart_id;
+        if (cartId) localStorage.setItem("cart_id", cartId);
+        toast.success("Product added to cart successfully!");
+      } else {
+        toast.error(data.message || "Failed to add product to cart.");
+      }
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      toast.error("Something went wrong.");
+    }
+  };
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -125,7 +146,7 @@ const handleAddToCart = (product) => {
                 variant="contained"
                 size="large"
                 fullWidth
-                 onClick={() => handleAddToCart(product)}
+                onClick={handleAddToCart}
                 sx={{
                   backgroundColor: "#3b82f6",
                   color: "#fff",
