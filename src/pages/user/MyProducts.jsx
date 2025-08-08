@@ -48,29 +48,45 @@ export default function MyProducts() {
         const rawItems = data.data || [];
         const items = await Promise.all(
           rawItems.map(async (item) => {
+            const token = localStorage.getItem('accessToken');
             const pid = item.product_id || item.product?._id;
-            let productDetails = null;
+            const cid = item.custom_design_id || item.custom_design?._id;
+            let details = null;
+            let isCustom = false;
             try {
-              if (pid) {
-                const pRes = await fetch(`http://54.169.159.141:3000/product/get/${pid}`);
+              if (cid) {
+                isCustom = true;
+                const cRes = await fetch(`http://54.169.159.141:3000/customDesign/get/${cid}`, {
+                  headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                });
+                const cJson = await cRes.json();
+                if (cRes.ok && (cJson.success === undefined || cJson.success)) {
+                  details = cJson.data;
+                }
+              } else if (pid) {
+                const pRes = await fetch(`http://54.169.159.141:3000/product/get/${pid}`, {
+                  headers: { 'Content-Type': 'application/json' },
+                });
                 const pJson = await pRes.json();
-                if (pRes.ok && pJson.success) {
-                  productDetails = pJson.data;
+                if (pRes.ok && (pJson.success === undefined || pJson.success)) {
+                  details = pJson.data;
                 }
               }
             } catch (e) {
-              // ignore product fetch error for this item
+              // ignore fetch error for this item
             }
 
             return {
-              _id: item._id || pid,
-              name: productDetails?.name || item.name,
-              description: productDetails?.description,
+              _id: item._id || cid || pid,
+              name: isCustom ? (details?.design_name || 'Custom Design') : (details?.name || item.name),
+              description: isCustom ? (details?.text || 'Thiết kế tùy chỉnh') : details?.description,
               size: item.size,
-              price: item.unit_price ?? productDetails?.price ?? 0,
+              price: item.unit_price ?? details?.price ?? 0,
               quantity: item.quantity || 0,
-              image_url: productDetails?.image_url || item.image_url,
+              image_url: (isCustom ? details?.image_url : details?.image_url) || item.image_url,
               product_id: pid,
+              custom_design_id: cid,
+              type: isCustom ? 'custom' : 'product',
             };
           })
         );
