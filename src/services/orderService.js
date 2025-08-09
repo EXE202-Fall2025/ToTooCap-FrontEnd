@@ -187,28 +187,28 @@ class OrderService {
   }
 
   // Lấy thống kê đơn hàng
-  static async getOrderStats() {
-    try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`${API_BASE_URL}/order/stats`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+  // static async getOrderStats() {
+  //   try {
+  //     const token = localStorage.getItem("accessToken");
+  //     const response = await fetch(`${API_BASE_URL}/order/stats`, {
+  //       method: "GET",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  //       },
+  //     });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching order stats:", error);
-      throw error;
-    }
-  }
+  //     const data = await response.json();
+  //     return data;
+  //   } catch (error) {
+  //     console.error("Error fetching order stats:", error);
+  //     throw error;
+  //   }
+  // }
 
   // Helper functions cho payment status
   static getPaymentStatusForOrder(payments, orderId) {
