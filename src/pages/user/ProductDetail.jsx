@@ -19,7 +19,8 @@ import CircleIcon from "@mui/icons-material/Circle";
 import Rating from "@mui/material/Rating";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 export default function ProductDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -28,8 +29,13 @@ export default function ProductDetail() {
 
   // Call API to add to cart instead of localStorage
   const handleAddToCart = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      toast.warn("Vui lòng đăng nhập trước.");
+      navigate("/login");
+      return;
+    }
     try {
-      const token = localStorage.getItem("accessToken");
       const res = await fetch(
         "http://54.169.159.141:3000/cart/CartItem/product/add",
         {
@@ -38,7 +44,7 @@ export default function ProductDetail() {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ quantity: 1, product_id: id }),
+          body: JSON.stringify({ quantity: 1, product_id: id || id }),
         }
       );
       const data = await res.json();
@@ -82,9 +88,18 @@ export default function ProductDetail() {
     return (
       <Box sx={{ display: "flex" }}>
         <Sidebar />
-        <Box sx={{ flexGrow: 1, p: 4, display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Box
+          sx={{
+            flexGrow: 1,
+            p: 4,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
           <CircularProgress />
         </Box>
+        <ToastContainer position="top-right" autoClose={3000} />
       </Box>
     );
   }
@@ -96,6 +111,7 @@ export default function ProductDetail() {
         <Box sx={{ flexGrow: 1, p: 4 }}>
           <Typography variant="h6">Product not found</Typography>
         </Box>
+        <ToastContainer position="top-right" autoClose={3000} />
       </Box>
     );
   }
@@ -113,7 +129,8 @@ export default function ProductDetail() {
                 component="img"
                 image="https://zerdio.com.vn/wp-content/uploads/2021/03/M22.jpg"
                 alt={product.name}
-                sx={{ width: "100%", maxHeight: 350, objectFit: "contain" }}              />
+                sx={{ width: "100%", maxHeight: 350, objectFit: "contain" }}
+              />
             </Grid>
 
             {/* Product Info */}
@@ -130,7 +147,10 @@ export default function ProductDetail() {
               </Typography>
 
               <Box display="flex" alignItems="center" gap={2} mb={1}>
-                <Typography variant="body1" sx={{ textDecoration: "line-through", color: "gray" }}>
+                <Typography
+                  variant="body1"
+                  sx={{ textDecoration: "line-through", color: "gray" }}
+                >
                   {(product.price * 1.2).toLocaleString()} VND
                 </Typography>
                 <Typography variant="h4" fontWeight="bold" color="primary">
@@ -224,7 +244,8 @@ export default function ProductDetail() {
                   <Typography fontWeight="bold">Customer {i}</Typography>
                   <Rating value={4} readOnly size="small" />
                   <Typography variant="body2" mt={0.5}>
-                    Really liked the quality and delivery was fast. Would recommend!
+                    Really liked the quality and delivery was fast. Would
+                    recommend!
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     April 2025
@@ -235,6 +256,7 @@ export default function ProductDetail() {
           </Box>
         </Box>
       </Box>
+      <ToastContainer position="top-right" autoClose={3000} />
     </Box>
   );
 }

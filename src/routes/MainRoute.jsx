@@ -13,6 +13,7 @@ import LoginPage from "../pages/loginPage";
 import MyProducts from "../pages/user/MyProducts";
 import BrandingGift from "../pages/user/BrandingGift";
 import Orders from "../pages/user/Orders";
+import PaymentReturn from "../pages/user/PaymentReturn";
 import Premium from "../pages/user/Premium";
 import ProductDetail from "../pages/user/ProductDetail";
 import PaymentPage from "../pages/user/PaymentPage";
@@ -43,6 +44,8 @@ const MainRoute = () => {
         <Route path="/premium" element={<Premium />} />
         <Route path="/product-detail/:id" element={<ProductDetail />} />
         <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/payment/vnpay/return" element={<PaymentReturn />} />
+
         <Route path="/choose-product" element={<ChooseProductPage />} />
         <Route path="/product-design/:id" element={<ProductDesignDetail />} />
         <Route path="/hat-design/:productId" element={<HatDesignPage />} />
@@ -50,18 +53,102 @@ const MainRoute = () => {
 
         {/* Admin Routes with AdminLayout */}
 
-        <Route path="/admin" element={<AdminLayout><AdminPage /></AdminLayout>} />
-        <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
-        <Route path="/admin/orders" element={<AdminLayout><OrderManagement /></AdminLayout>} />
-        <Route path="/admin/products" element={<AdminLayout><ProductManagement /></AdminLayout>} />
-        <Route path="/admin/categories" element={<AdminLayout><CategoryManagement /></AdminLayout>} />
-        <Route path="/admin/reports" element={<AdminLayout><RevenueReport /></AdminLayout>} />
-        <Route path="/admin/images" element={<AdminLayout><ImagesManagement /></AdminLayout>} />
-        <Route path="/admin/analytics" element={<AdminLayout><div>Thống kê - Coming soon</div></AdminLayout>} />
-        <Route path="/admin/settings/*" element={<AdminLayout><div>Cài đặt hệ thống - Coming soon</div></AdminLayout>} />
-        <Route path="/admin/notifications" element={<AdminLayout><div>Thông báo - Coming soon</div></AdminLayout>} />
-        <Route path="/admin/security" element={<AdminLayout><div>Bảo mật - Coming soon</div></AdminLayout>} />
-        <Route path="/admin/support/*" element={<AdminLayout><div>Hỗ trợ - Coming soon</div></AdminLayout>} />
+        <Route
+          path="/admin"
+          element={
+            <AdminLayout>
+              <AdminPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminLayout>
+              <UserManagement />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <AdminLayout>
+              <OrderManagement />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/products"
+          element={
+            <AdminLayout>
+              <ProductManagement />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <AdminLayout>
+              <CategoryManagement />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <AdminLayout>
+              <RevenueReport />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/images"
+          element={
+            <AdminLayout>
+              <ImagesManagement />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <AdminLayout>
+              <div>Thống kê - Coming soon</div>
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/settings/*"
+          element={
+            <AdminLayout>
+              <div>Cài đặt hệ thống - Coming soon</div>
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/notifications"
+          element={
+            <AdminLayout>
+              <div>Thông báo - Coming soon</div>
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/security"
+          element={
+            <AdminLayout>
+              <div>Bảo mật - Coming soon</div>
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/support/*"
+          element={
+            <AdminLayout>
+              <div>Hỗ trợ - Coming soon</div>
+            </AdminLayout>
+          }
+        />
 
         {/* Routes accessible by manager */}
         <Route path="/manager" element={<ManagerPage />} />
