@@ -4,9 +4,7 @@ import { Box, Button, Paper, Stack, Tooltip, IconButton, Typography, Slider } fr
 import { TextFields, UploadFile, ColorLens, DeleteOutline, Save, Backspace } from '@mui/icons-material';
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
 import baseHat from '../../../assets/image_non.png';
-import starSticker from '../../../assets/stickers/star.svg';
-import heartSticker from '../../../assets/stickers/heart.svg';
-import smileSticker from '../../../assets/stickers/smile.svg';
+import oneSticker from '../../../assets/stickers/1.webp';
 import CloudinaryService from '../../../services/cloudinary.service';
 
 // A simpler, local-first hat designer: one canvas, base hat image, add text/image, color and save to localStorage.
@@ -22,9 +20,7 @@ export default function HatDesignPage() {
   const [initialized, setInitialized] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
   const stickers = [
-    { id: 'star', src: starSticker, name: 'Star' },
-    { id: 'heart', src: heartSticker, name: 'Heart' },
-    { id: 'smile', src: smileSticker, name: 'Smile' },
+    { id: 'one', src: oneSticker, name: 'Sticker 1' },
   ];
 
   const STORAGE_JSON_KEY = `hatDesign:json:${productId || 'default'}`;
@@ -44,7 +40,6 @@ export default function HatDesignPage() {
           scaleX: scale,
           scaleY: scale,
           left: cw / 2 - (img.width * scale) / 2,
-          top: ch / 2 - (img.height * scale) / 2,
           selectable: false,
           evented: false,
           name: 'baseHat',
