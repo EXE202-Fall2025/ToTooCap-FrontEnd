@@ -9,7 +9,9 @@ const isGhPages =
 
 export default defineConfig({
   plugins: [react()],
+
   base: isGhPages ? "/ToTooCap-FrontEnd/" : "/",
+
   optimizeDeps: {
     include: ["fabric"],
   },
